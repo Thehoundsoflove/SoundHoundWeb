@@ -22,9 +22,6 @@
     <canvas id="previewCanvas" width="350" height="350"></canvas>
     <img id="imagePreview" src="" alt="Captured Image Preview" />
     <audio id="audioPlayer" controls></audio>
-	<button id="decodeButton" onclick="decodeAudio()">Decode Audio to Image</button>
-	<canvas id="decodedCanvas" width="350" height="350"></canvas>
-	<img id="decodedImagePreview" src="" alt="Decoded Image Preview" />
     <script>
         let videoStream;
         let videoElement = document.createElement('video'); // Invisible video element
@@ -229,65 +226,6 @@
                 view.setUint8(offset + i, string.charCodeAt(i));
             }
         }
-		
-		// Decode the audio back into an image
-		function decodeAudio() {
-		    const audioSource = audioPlayer.src;
-
-		    if (!audioSource) {
-		        alert('No audio source to decode!');
-		        return;
-		    }
-
-		    fetch(audioSource)
-		        .then(response => response.arrayBuffer())
-		        .then(buffer => audioContext.decodeAudioData(buffer))
-		        .then(audioBuffer => {
-		            const channelData = audioBuffer.getChannelData(0); // Use the first channel
-		            const decodedGrayscale = extractGrayscaleFromAudio(channelData, audioBuffer.sampleRate);
-		            renderDecodedImage(decodedGrayscale);
-		        })
-		        .catch(error => console.error('Error decoding audio:', error));
-		}
-
-		// Extract grayscale values from the audio signal
-		function extractGrayscaleFromAudio(channelData, sampleRate) {
-		    const duration = 3; // Duration in seconds (same as encoded duration)
-		    const numPixels = 350 * 350; // Total number of pixels in the image (canvas size)
-		    const samplesPerPixel = Math.floor(sampleRate * duration / numPixels);
-		    const grayscale = [];
-
-		    for (let i = 0; i < numPixels; i++) {
-		        const pixelSamples = channelData.slice(i * samplesPerPixel, (i + 1) * samplesPerPixel);
-		        const amplitude = pixelSamples.reduce((sum, value) => sum + Math.abs(value), 0) / pixelSamples.length;
-		        grayscale.push(amplitude); // Use amplitude to determine brightness (normalized 0-1)
-		    }
-
-		    return grayscale;
-		}
-
-		// Render the decoded grayscale image
-		function renderDecodedImage(grayscale) {
-		    const canvas = document.getElementById('decodedCanvas');
-		    const ctx = canvas.getContext('2d');
-		    const imageData = ctx.createImageData(350, 350);
-		    const data = imageData.data;
-
-		    for (let i = 0; i < grayscale.length; i++) {
-		        const value = Math.floor(grayscale[i] * 255); // Convert to 0-255 range
-		        const index = i * 4;
-		        data[index] = value; // Red
-		        data[index + 1] = value; // Green
-		        data[index + 2] = value; // Blue
-		        data[index + 3] = 255; // Alpha (fully opaque)
-		    }
-
-		    ctx.putImageData(imageData, 0, 0);
-
-		    // Show the decoded image as a preview
-		    const decodedImagePreview = document.getElementById('decodedImagePreview');
-		    decodedImagePreview.src = canvas.toDataURL();
-		}
     </script>
 </body>
 </html>
