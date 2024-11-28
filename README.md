@@ -10,8 +10,8 @@ Output from this webapp can be verified with the built-in decoder.
 # SoundHound Webapp
 SoundHound is a pet project, it is a Sensory Substitution tool that has a very high resolution of 350x350.
 
-Here are a few example images taken with a low-end Android device (Galaxy A01):
+Here are a two example images taken with a low-end Android device (Galaxy A01):
 
-![Aloe Vera](https://github.com/user-attachments/assets/63b27061-3719-43f6-8069-d15aa8f712b8)
+<img width="361" alt="image" src="https://github.com/user-attachments/assets/42c7991b-88c3-4063-bb3e-228f109336fa">
 
-![Buddha](https://github.com/user-attachments/assets/66b8504b-87f5-4cc6-814f-9df19ecd2eb5)
+<img width="361" alt="image" src="https://github.com/user-attachments/assets/37c372c7-0031-4453-9ad1-9e89fbedcc1b">
