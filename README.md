@@ -14,4 +14,4 @@ Here are a two example images taken with a low-end Android device (Galaxy A01):
 
 <img width="361" alt="image" src="https://github.com/user-attachments/assets/42c7991b-88c3-4063-bb3e-228f109336fa">
 
-<img width="361" alt="image" src="https://github.com/user-attachments/assets/37c372c7-0031-4453-9ad1-9e89fbedcc1b">
+<img width="384" alt="Screenshot 2024-11-28 at 10 53 27 AM" src="https://github.com/user-attachments/assets/7ecf62e4-0f40-4455-a911-554c4db68f3a">
