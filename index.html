@@ -36,7 +36,8 @@
         let currentCamera = 'environment'; // Default to back camera
         let captureInProgress = false;
         let captureInterval;
-        // Toggle between front and back cameras
+        // Toggle between front and back cameras, back camera is selected by default.
+		// If the front camera isn't toggled for before starting capture, page must be reloaded to select it
         function switchCamera() {
             currentCamera = currentCamera === 'environment' ? 'user' : 'environment'; // Switch camera
             if (cameraOn) {
