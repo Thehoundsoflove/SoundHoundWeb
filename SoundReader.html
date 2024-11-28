@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decode Audio to Image</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+    }
+    canvas {
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+  <h1>Decode Audio to Image</h1>
+  <input type="file" id="audioInput" accept=".wav">
+  <canvas id="imageCanvas" width="350" height="350"></canvas>
+  <script>
+    const canvas = document.getElementById('imageCanvas');
+    const ctx = canvas.getContext('2d');
+    const imageSize = 350;
+
+    document.getElementById('audioInput').addEventListener('change', function (event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          const audioContext = new AudioContext();
+          const arrayBuffer = e.target.result;
+
+          // Decode the audio file
+          audioContext.decodeAudioData(arrayBuffer).then(audioBuffer => {
+            const channelData = audioBuffer.getChannelData(0); // Use first audio channel
+
+            // Normalize audio data to -1 to 1
+            const maxVal = Math.max(...channelData.map(Math.abs));
+            if (maxVal === 0) {
+              alert("Audio signal is silent or contains no valid data.");
+              return;
+            }
+            const normalizedData = channelData.map(sample => sample / maxVal);
+
+            // Create an image and populate it with pixel data
+            const imageData = ctx.createImageData(imageSize, imageSize);
+            const totalPixels = imageSize * imageSize;
+            const pixelsPerSample = Math.floor(normalizedData.length / totalPixels);
+
+            for (let i = 0; i < totalPixels; i++) {
+              const startIdx = i * pixelsPerSample;
+              const endIdx = startIdx + pixelsPerSample;
+              const segment = normalizedData.slice(startIdx, endIdx);
+              const pixelValue = segment.reduce((sum, value) => sum + value, 0);
+
+              // Map to 0-255 and ensure valid pixel value
+              const colorValue = Math.min(Math.max(Math.floor((pixelValue + 1) * 127.5), 0), 255);
+              const pixelIndex = i * 4;
+
+              // Assign grayscale value to RGBA (R=G=B, A=255)
+              imageData.data[pixelIndex] = colorValue;     // Red
+              imageData.data[pixelIndex + 1] = colorValue; // Green
+              imageData.data[pixelIndex + 2] = colorValue; // Blue
+              imageData.data[pixelIndex + 3] = 255;        // Alpha
+            }
+
+            // Render the image onto the canvas
+            ctx.putImageData(imageData, 0, 0);
+          }).catch(err => {
+            alert("Failed to decode audio file.");
+            console.error(err);
+          });
+        };
+
+        reader.readAsArrayBuffer(file);
+      }
+    });
+  </script>
+</body>
+</html>
