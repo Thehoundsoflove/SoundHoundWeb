@@ -18,6 +18,8 @@
 <body>
     <h1>Capture Image to Sine Wave Audio</h1>
     <button id="startButton" onclick="toggleCamera()">Start Camera</button>
+	<button id="switchCameraButton" onclick="switchCamera()">Switch Camera</button>
+	<p id="activeCamera">Current Camera: Back</p>
     <button id="captureButton" onclick="startCaptures()" disabled>Start Captures</button>
     <canvas id="previewCanvas" width="350" height="350"></canvas>
     <img id="imagePreview" src="" alt="Captured Image Preview" />
@@ -51,7 +53,23 @@
                 document.getElementById('startButton').innerText = 'Stop Camera';
                 document.getElementById('captureButton').disabled = false;
             }
-        }
+        }	
+		// Update the active camera label dynamically
+		function updateCameraLabel() {
+		    const cameraLabel = document.getElementById('activeCamera');
+		    cameraLabel.innerText = `Current Camera: ${currentCamera === 'environment' ? 'Back' : 'Front'}`;
+		}
+		// Modify the switchCamera function to update the label
+		function switchCamera() {
+		    currentCamera = currentCamera === 'environment' ? 'user' : 'environment'; // Switch camera
+		    updateCameraLabel(); // Update label after switching
+		    if (cameraOn) {
+		        stopCamera();
+		        startCamera(); // Restart camera with the new source
+		    }
+		}
+		// Initialize the label when the page loads
+		updateCameraLabel();		
         // Start the camera with the current source (front/back)
         function startCamera() {
             const constraints = {
