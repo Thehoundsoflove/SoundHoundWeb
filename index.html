@@ -3,40 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image-to-Sound: Visualize Decoded Sound Wave</title>
+    <title>Capture Image to Sine Wave Audio</title>
     <style>
+        /* Style for the image preview */
         #imagePreview {
             width: 350px;
             height: 350px;
             margin-top: 20px;
         }
-        canvas {
-            border: 1px solid black;
-            margin-top: 20px;
+        #previewCanvas {
+            display: none;
         }
     </style>
-</head>
 <body>
-    <h1>Image-to-Sound: Visualize Decoded Sound Wave</h1>
+    <h1>Capture Image to Sine Wave Audio</h1>
     <button id="startButton" onclick="toggleCamera()">Start Camera</button>
     <button id="captureButton" onclick="startCaptures()" disabled>Start Captures</button>
-    <canvas id="waveformCanvas" width="350" height="350"></canvas>
+    <canvas id="previewCanvas" width="350" height="350"></canvas>
+    <img id="imagePreview" src="" alt="Captured Image Preview" />
     <audio id="audioPlayer" controls></audio>
-
+	<button id="decodeButton" onclick="decodeAudio()">Decode Audio to Image</button>
+	<canvas id="decodedCanvas" width="350" height="350"></canvas>
+	<img id="decodedImagePreview" src="" alt="Decoded Image Preview" />
     <script>
         let videoStream;
         let videoElement = document.createElement('video'); // Invisible video element
         let audioPlayer = document.getElementById('audioPlayer');
         let audioContext = new (window.AudioContext || window.webkitAudioContext)();
         let cameraOn = false;
+        let currentCamera = 'environment'; // Default to back camera
         let captureInProgress = false;
-
-        const canvas = document.getElementById('waveformCanvas');
-        const ctx = canvas.getContext('2d');
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-
-        // Toggle between starting/stopping the camera
+        let captureInterval;
+        // Toggle between front and back cameras
+        function switchCamera() {
+            currentCamera = currentCamera === 'environment' ? 'user' : 'environment'; // Switch camera
+            if (cameraOn) {
+                stopCamera();
+                startCamera(); // Restart camera with new source
+            }
+        }
+        // Start or stop the camera
         function toggleCamera() {
             if (cameraOn) {
                 stopCamera();
@@ -49,66 +55,109 @@
                 document.getElementById('captureButton').disabled = false;
             }
         }
-
-        // Start the camera
+        // Start the camera with the current source (front/back)
         function startCamera() {
-            const constraints = { video: { facingMode: 'environment' } };
+            const constraints = {
+                video: { facingMode: { exact: currentCamera } }
+            };
             navigator.mediaDevices.getUserMedia(constraints)
-                .then(stream => {
+                .then(function (stream) {
                     videoStream = stream;
                     videoElement.srcObject = stream;
                     videoElement.play();
                     cameraOn = true;
                 })
-                .catch(err => console.error('Error accessing camera: ' + err));
+                .catch(function (err) {
+                    console.error('Error accessing camera: ' + err);
+                });
         }
-
         // Stop the camera
         function stopCamera() {
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-            }
+            videoStream.getTracks().forEach(track => track.stop());
         }
-
-        // Start captures and generate the sine wave visualization
+        // Start the automated capture process
         function startCaptures() {
             if (captureInProgress) return; // Prevent overlapping captures
             captureInProgress = true;
+            // Trigger the first capture
             captureImage();
+            // Set up an interval to repeat the process after the audio has played
+            audioPlayer.onended = function() {
+                if (captureInProgress) {
+                    captureImage(); // Capture image after audio ends
+                }
+            };
         }
-
-        // Capture the image and render the decoded sound wave
+        // Capture the current image from the camera feed
         function captureImage() {
-            const previewCanvas = document.createElement('canvas');
-            const ctx = previewCanvas.getContext('2d');
-            previewCanvas.width = canvasWidth;
-            previewCanvas.height = canvasHeight;
-
-            ctx.drawImage(videoElement, 0, 0, previewCanvas.width, previewCanvas.height);
-            const imageData = ctx.getImageData(0, 0, previewCanvas.width, previewCanvas.height);
-
-            // Convert the image into grayscale values
-            const grayscale = convertToGrayscale(imageData);
-
-            // Generate and visualize the sine wave
-            const sineWave = generateSineWave(grayscale);
-            renderWaveform(sineWave);
+            if (captureInProgress) {
+                // Capture image using the video feed
+                const canvas = document.getElementById('previewCanvas');
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height); // Draw video frame onto canvas
+                // Get image data
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const imageURL = canvas.toDataURL(); // Convert canvas to image URL
+                // Set the preview image source
+                const previewImage = document.getElementById('imagePreview');
+                previewImage.src = imageURL;
+                // Convert the captured image to a sine wave audio
+                const curveData = detectCurves(imageData);
+                const grayscale = convertToGrayscale(curveData);
+                // Generate sine wave audio from grayscale values
+                generateAudio(grayscale);
+            }
         }
-
-        // Convert image data to grayscale
+        // Detect edges in the captured image using Sobel edge detection
+        function detectCurves(imageData) {
+            const width = imageData.width;
+            const height = imageData.height;
+            const data = imageData.data;
+            const curveData = new ImageData(width, height);
+            const curvePixels = curveData.data;
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const i = (y * width + x) * 4;
+                    // Sobel operator for edge detection
+                    const gx = 
+                        -data[i - 4 - width * 4] + data[i + 4 - width * 4] +
+                        -2 * data[i - 4] + 2 * data[i + 4] +
+                        -data[i - 4 + width * 4] + data[i + 4 + width * 4];
+                    const gy = 
+                        -data[i - 4 - width * 4] - 2 * data[i - width * 4] - data[i + 4 - width * 4] +
+                        data[i - 4 + width * 4] + 2 * data[i + width * 4] + data[i + 4 + width * 4];
+                    const magnitude = Math.sqrt(gx * gx + gy * gy);
+                    // Threshold for edge detection
+                    if (magnitude > 128) {
+                        curvePixels[i] = 255; // Red
+                        curvePixels[i + 1] = 255; // Green
+                        curvePixels[i + 2] = 255; // Blue
+                        curvePixels[i + 3] = 255; // Alpha
+                    } else {
+                        curvePixels[i + 3] = 0; // Transparent for non-edges
+                    }
+                }
+            }
+            return curveData;
+        }
+        // Convert detected edges to grayscale values
         function convertToGrayscale(imageData) {
             const pixels = imageData.data;
             const grayscale = [];
             for (let i = 0; i < pixels.length; i += 4) {
-                const gray = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / (3 * 255);
-                grayscale.push(gray);
+                const alpha = pixels[i + 3];
+                if (alpha > 0) {
+                    const gray = pixels[i] / 255;
+                    grayscale.push(gray);
+                } else {
+                    grayscale.push(0); // Silence for non-curved regions
+                }
             }
             return grayscale;
         }
-
-        // Generate a sine wave from grayscale values
-        function generateSineWave(grayscale) {
-            const duration = 3; // seconds
+        // Generate audio from grayscale values
+        function generateAudio(grayscale) {
+            const duration = 3; // 3 seconds of audio
             const sampleRate = audioContext.sampleRate;
             const totalSamples = duration * sampleRate;
             const samplesPerPixel = Math.floor(totalSamples / grayscale.length);
@@ -116,8 +165,8 @@
             const frequencyRange = 20000 - frequencyBase;
             const buffer = audioContext.createBuffer(1, totalSamples, sampleRate);
             const channel = buffer.getChannelData(0);
-
             let sampleIndex = 0;
+            // Generate audio samples based on grayscale values
             for (let i = 0; i < grayscale.length; i++) {
                 const pixelValue = grayscale[i];
                 const frequency = frequencyBase + pixelValue * frequencyRange;
@@ -125,49 +174,33 @@
                 for (let j = 0; j < samplesPerPixel; j++) {
                     if (sampleIndex >= totalSamples) break;
                     const t = sampleIndex / sampleRate;
-                    channel[sampleIndex] = amplitude * Math.sin(2 * Math.PI * frequency * t);
+                    const sineValue = amplitude * Math.sin(2 * Math.PI * frequency * t);
+                    channel[sampleIndex] = sineValue;
                     sampleIndex++;
                 }
             }
-
-            // Normalize the waveform
+            // Normalize the audio signal
             const maxAmplitude = Math.max(...channel.map(Math.abs));
             if (maxAmplitude > 0) {
                 for (let i = 0; i < channel.length; i++) {
                     channel[i] /= maxAmplitude;
                 }
             }
-
-            // Export the audio and play it
+            // Export the audio as WAV and play it
             const wavBlob = bufferToWave(buffer, totalSamples);
             audioPlayer.src = URL.createObjectURL(wavBlob);
-            audioPlayer.play();
-
-            return channel;
-        }
-
-        // Render the sine wave on the canvas
-        function renderWaveform(waveform) {
-            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-            ctx.beginPath();
-            ctx.moveTo(0, canvasHeight / 2);
-
-            const step = Math.ceil(waveform.length / canvasWidth);
-            for (let i = 0; i < canvasWidth; i++) {
-                const sample = waveform[i * step];
-                const y = (1 - sample) * canvasHeight / 2;
-                ctx.lineTo(i, y);
+            // Ensure audio playback starts after user interaction
+            if (audioPlayer.paused) {
+                audioPlayer.play().catch((err) => {
+                    console.log('Audio play error:', err);
+                });
             }
-
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 1;
-            ctx.stroke();
         }
-
         // Convert AudioBuffer to WAV format
         function bufferToWave(buffer, totalSamples) {
             const wavArray = new Uint8Array(44 + totalSamples * 2);
             const view = new DataView(wavArray.buffer);
+            // RIFF header
             writeString(view, 0, 'RIFF');
             view.setUint32(4, 36 + totalSamples * 2, true);
             writeString(view, 8, 'WAVE');
@@ -181,6 +214,7 @@
             view.setUint16(34, 16, true);
             writeString(view, 36, 'data');
             view.setUint32(40, totalSamples * 2, true);
+            // Audio data
             let offset = 44;
             const channelData = buffer.getChannelData(0);
             for (let i = 0; i < totalSamples; i++) {
@@ -189,12 +223,71 @@
             }
             return new Blob([wavArray], { type: 'audio/wav' });
         }
-
+        // Write a string into the WAV header
         function writeString(view, offset, string) {
             for (let i = 0; i < string.length; i++) {
                 view.setUint8(offset + i, string.charCodeAt(i));
             }
         }
+		
+		// Decode the audio back into an image
+		function decodeAudio() {
+		    const audioSource = audioPlayer.src;
+
+		    if (!audioSource) {
+		        alert('No audio source to decode!');
+		        return;
+		    }
+
+		    fetch(audioSource)
+		        .then(response => response.arrayBuffer())
+		        .then(buffer => audioContext.decodeAudioData(buffer))
+		        .then(audioBuffer => {
+		            const channelData = audioBuffer.getChannelData(0); // Use the first channel
+		            const decodedGrayscale = extractGrayscaleFromAudio(channelData, audioBuffer.sampleRate);
+		            renderDecodedImage(decodedGrayscale);
+		        })
+		        .catch(error => console.error('Error decoding audio:', error));
+		}
+
+		// Extract grayscale values from the audio signal
+		function extractGrayscaleFromAudio(channelData, sampleRate) {
+		    const duration = 3; // Duration in seconds (same as encoded duration)
+		    const numPixels = 350 * 350; // Total number of pixels in the image (canvas size)
+		    const samplesPerPixel = Math.floor(sampleRate * duration / numPixels);
+		    const grayscale = [];
+
+		    for (let i = 0; i < numPixels; i++) {
+		        const pixelSamples = channelData.slice(i * samplesPerPixel, (i + 1) * samplesPerPixel);
+		        const amplitude = pixelSamples.reduce((sum, value) => sum + Math.abs(value), 0) / pixelSamples.length;
+		        grayscale.push(amplitude); // Use amplitude to determine brightness (normalized 0-1)
+		    }
+
+		    return grayscale;
+		}
+
+		// Render the decoded grayscale image
+		function renderDecodedImage(grayscale) {
+		    const canvas = document.getElementById('decodedCanvas');
+		    const ctx = canvas.getContext('2d');
+		    const imageData = ctx.createImageData(350, 350);
+		    const data = imageData.data;
+
+		    for (let i = 0; i < grayscale.length; i++) {
+		        const value = Math.floor(grayscale[i] * 255); // Convert to 0-255 range
+		        const index = i * 4;
+		        data[index] = value; // Red
+		        data[index + 1] = value; // Green
+		        data[index + 2] = value; // Blue
+		        data[index + 3] = 255; // Alpha (fully opaque)
+		    }
+
+		    ctx.putImageData(imageData, 0, 0);
+
+		    // Show the decoded image as a preview
+		    const decodedImagePreview = document.getElementById('decodedImagePreview');
+		    decodedImagePreview.src = canvas.toDataURL();
+		}
     </script>
 </body>
 </html>
