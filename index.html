@@ -36,8 +36,7 @@
         let currentCamera = 'environment'; // Default to back camera
         let captureInProgress = false;
         let captureInterval;
-        // Toggle between front and back cameras, back camera is selected by default.
-		// If the front camera isn't toggled for before starting capture, page must be reloaded to select it
+        // Toggle between front and back cameras
         function switchCamera() {
             currentCamera = currentCamera === 'environment' ? 'user' : 'environment'; // Switch camera
             if (cameraOn) {
@@ -225,46 +224,40 @@
 		    }
 		}
         // Generate audio from grayscale values
-        function generateAudio(grayscale) {
-            const duration = 3; // 3 seconds of audio
-            const sampleRate = audioContext.sampleRate;
-            const totalSamples = duration * sampleRate;
-            const samplesPerPixel = Math.floor(totalSamples / grayscale.length);
-            const frequencyBase = 20;
-            const frequencyRange = 20000 - frequencyBase;
-            const buffer = audioContext.createBuffer(1, totalSamples, sampleRate);
-            const channel = buffer.getChannelData(0);
-            let sampleIndex = 0;
-            // Generate audio samples based on grayscale values
-            for (let i = 0; i < grayscale.length; i++) {
-                const pixelValue = grayscale[i];
-                const frequency = frequencyBase + pixelValue * frequencyRange;
-                const amplitude = pixelValue;
-                for (let j = 0; j < samplesPerPixel; j++) {
-                    if (sampleIndex >= totalSamples) break;
-                    const t = sampleIndex / sampleRate;
-                    const sineValue = amplitude * Math.sin(2 * Math.PI * frequency * t);
-                    channel[sampleIndex] = sineValue;
-                    sampleIndex++;
-                }
-            }
-            // Normalize the audio signal
-            const maxAmplitude = Math.max(...channel.map(Math.abs));
-            if (maxAmplitude > 0) {
-                for (let i = 0; i < channel.length; i++) {
-                    channel[i] /= maxAmplitude;
-                }
-            }
-            // Export the audio as WAV and play it
-            const wavBlob = bufferToWave(buffer, totalSamples);
-            audioPlayer.src = URL.createObjectURL(wavBlob);
-            // Ensure audio playback starts after user interaction
-            if (audioPlayer.paused) {
-                audioPlayer.play().catch((err) => {
-                    console.log('Audio play error:', err);
-                });
-            }
-        }
+		function generateAudio(grayscale) {
+		    const sampleRate = audioContext.sampleRate; // Sample rate of the audio
+		    const totalSamples = grayscale.length; // One sample per pixel
+		    const frequencyBase = 20; // Base frequency for the sine wave
+		    const frequencyRange = 20000 - frequencyBase; // Frequency range for grayscale mapping
+		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate); // Create audio buffer
+		    const channel = buffer.getChannelData(0); // Get the channel data array
+
+		    // Generate audio samples based on grayscale values
+		    for (let i = 0; i < grayscale.length; i++) {
+		        const pixelValue = grayscale[i]; // Grayscale value (normalized 0 to 1)
+		        const frequency = frequencyBase + pixelValue * frequencyRange; // Map pixel to frequency
+		        const amplitude = pixelValue; // Amplitude is proportional to grayscale value
+		        const t = i / sampleRate; // Time for the current sample
+		        channel[i] = amplitude * Math.sin(2 * Math.PI * frequency * t); // Generate sine wave
+		    }
+
+		    // Normalize the audio signal
+		    const maxAmplitude = Math.max(...channel.map(Math.abs));
+		    if (maxAmplitude > 0) {
+		        for (let i = 0; i < channel.length; i++) {
+		            channel[i] /= maxAmplitude;
+		        }
+		    }
+
+		    // Export the audio as WAV and play it
+		    const wavBlob = bufferToWave(buffer, totalSamples); // Convert buffer to WAV
+		    audioPlayer.src = URL.createObjectURL(wavBlob); // Set audio source
+		    if (audioPlayer.paused) {
+		        audioPlayer.play().catch((err) => {
+		            console.error('Audio play error:', err);
+		        });
+		    }
+		}
         // Convert AudioBuffer to WAV format
         function bufferToWave(buffer, totalSamples) {
             const wavArray = new Uint8Array(44 + totalSamples * 2);
