@@ -17,7 +17,9 @@
     </style>
 <body>
     <h1>Capture Image to Sine Wave Audio</h1>
-    <button id="startButton" onclick="toggleCamera()">Start Camera</button>
+    <label for="resolutionSlider">Resolution: </label>
+    <input type="range" id="resolutionSlider" min="50" max="350" value="350" step="50">
+    <span id="resolutionValue">350x350</span>    <button id="startButton" onclick="toggleCamera()">Start Camera</button>
 	<button id="switchCameraButton" onclick="switchCamera()">Switch Camera</button>
 	<p id="activeCamera">Current Camera: Back</p>
     <button id="captureButton" onclick="startCaptures()" disabled>Start Captures</button>
@@ -28,6 +30,8 @@
 	<canvas id="decodedCanvas" width="350" height="350"></canvas>
 	<p id="decodeMessage"></p>
     <script>
+		const resolutionSlider = document.getElementById('resolutionSlider');
+		const resolutionValue = document.getElementById('resolutionValue');
         let videoStream;
         let videoElement = document.createElement('video'); // Invisible video element
         let audioPlayer = document.getElementById('audioPlayer');
@@ -36,7 +40,29 @@
         let currentCamera = 'environment'; // Default to back camera
         let captureInProgress = false;
         let captureInterval;
-        // Toggle between front and back cameras
+		
+		function updateResolution() {
+		    // Map the slider value to a resolution
+		    const resolution = resolutionSlider.value;
+		    const previewCanvas = document.getElementById('previewCanvas');
+		    const decodedCanvas = document.getElementById('decodedCanvas');
+    
+		    // Update canvas dimensions
+		    previewCanvas.width = resolution;
+		    previewCanvas.height = resolution;
+		    decodedCanvas.width = resolution;
+		    decodedCanvas.height = resolution;
+
+		    // Update the displayed resolution value
+		    resolutionValue.innerText = `${resolution}x${resolution}`;
+		}
+
+		// Initialize canvas with the default resolution (350x350)
+		updateResolution();
+
+		// Listen for changes to the slider
+		resolutionSlider.addEventListener('input', updateResolution);
+		// Toggle between front and back cameras
         function switchCamera() {
             currentCamera = currentCamera === 'environment' ? 'user' : 'environment'; // Switch camera
             if (cameraOn) {
