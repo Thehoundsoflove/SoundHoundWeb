@@ -11,6 +11,7 @@ Output from this webapp can be verified with the built-in decoder.
 SoundHound is a pet project, it is a Sensory Substitution tool that has a very high resolution of 350x350.
 
 **Image Capturing**
+
 Edge Detection: Uses the Sobel edge detection algorithm to detect edges in the captured image, which is then used to create grayscale values.
 
 Grayscale Conversion: The edges from the Sobel operator are converted into grayscale values, with detected edges being represented in white (255) and non-edges as black (0).
@@ -18,6 +19,7 @@ Grayscale Conversion: The edges from the Sobel operator are converted into grays
 Audio Generation: The grayscale values are then mapped to frequencies to generate sine wave audio. The amplitude of each sine wave is proportional to the pixel's brightness value.
 
 **Audio output**
+
 The audio generation converts the grayscale values of each pixel into sine wave frequencies.
 
 Each grayscale value corresponds to a frequency between 20 Hz and 20,000 Hz, which are used to modulate the audio signal.
@@ -27,6 +29,7 @@ The app generates a WAV audio file from the sine wave and plays it using an <aud
 Audio normalization is applied to ensure the amplitude does not exceed the maximum range.
 
 **Audio encoding**
+
 The generated audio has a sample rate of 44,100 Hz.
 
 Each pixel in the image corresponds to a single audio sample (1 sample = 1 pixel), and the duration of each sample is approximately 22ish microseconds.
