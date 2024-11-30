@@ -17,6 +17,12 @@
     </style>
 <body>
     <h1>Capture Image to Sine Wave Audio</h1>
+	<label for="waveformSelect">Waveform: </label>
+	<select id="waveformSelect">
+	    <option value="sine">Sine Wave</option>
+	    <option value="square">Square Wave</option>
+	    <option value="triangle">Triangular Wave</option>
+	</select>
     <label for="resolutionSlider">Resolution: </label>
     <input type="range" id="resolutionSlider" min="50" max="350" value="350" step="50">
     <span id="resolutionValue">350x350</span>    <button id="startButton" onclick="toggleCamera()">Start Camera</button>
@@ -276,22 +282,48 @@
 		        decodeMessage.innerText = 'Error decoding audio.';
 		    }
 		}
-        // Generate audio from grayscale values
+		// Get the waveform select dropdown
+		const waveformSelect = document.getElementById('waveformSelect');
+
+		// Modify the generateAudio function to handle different waveforms
 		function generateAudio(grayscale) {
 		    const sampleRate = audioContext.sampleRate; // Sample rate of the audio
 		    const totalSamples = grayscale.length; // One sample per pixel
-		    const frequencyBase = 20; // Base frequency for the sine wave
+		    const frequencyBase = 20; // Base frequency for the waveform
 		    const frequencyRange = 20000 - frequencyBase; // Frequency range for grayscale mapping
 		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate); // Create audio buffer
 		    const channel = buffer.getChannelData(0); // Get the channel data array
 
-		    // Generate audio samples based on grayscale values
+		    // Get the selected waveform type
+		    const waveformType = waveformSelect.value;
+
+		    // Generate audio samples based on grayscale values and selected waveform
 		    for (let i = 0; i < grayscale.length; i++) {
 		        const pixelValue = grayscale[i]; // Grayscale value (normalized 0 to 1)
 		        const frequency = frequencyBase + pixelValue * frequencyRange; // Map pixel to frequency
 		        const amplitude = pixelValue; // Amplitude is proportional to grayscale value
 		        const t = i / sampleRate; // Time for the current sample
-		        channel[i] = amplitude * Math.sin(2 * Math.PI * frequency * t); // Generate sine wave
+
+		        let waveSample;
+
+		        // Switch between different waveforms
+		        switch (waveformType) {
+		            case 'sine':
+		                waveSample = amplitude * Math.sin(2 * Math.PI * frequency * t); // Sine wave
+		                break;
+		            case 'square':
+		                // Square wave: Toggle between 1 and -1 based on sine wave zero crossings
+		                waveSample = amplitude * (Math.sin(2 * Math.PI * frequency * t) >= 0 ? 1 : -1); // Square wave
+		                break;
+		            case 'triangle':
+		                // Triangle wave: Use a sawtooth wave and reflect it to form a triangle
+		                waveSample = amplitude * (2 * Math.abs(2 * (t * frequency - Math.floor(t * frequency + 0.5))) - 1); // Triangular wave
+		                break;
+		            default:
+		                waveSample = amplitude * Math.sin(2 * Math.PI * frequency * t); // Default to sine if nothing selected
+		        }
+
+		        channel[i] = waveSample; // Set the waveform sample in the audio channel
 		    }
 
 		    // Normalize the audio signal
@@ -311,6 +343,7 @@
 		        });
 		    }
 		}
+
         // Convert AudioBuffer to WAV format
         function bufferToWave(buffer, totalSamples) {
             const wavArray = new Uint8Array(44 + totalSamples * 2);
