@@ -18,11 +18,11 @@
 <body>
     <h1>Capture Image to Sine Wave Audio</h1>
     <label for="resolutionSlider">Resolution: </label>
-    <input type="range" id="resolutionSlider" min="50" max="350" value="350" step="50">
+    <input type="range" id="resolutionSlider" min="50" max="350" value="350" step="88">
     <span id="resolutionValue">350x350</span>    <button id="startButton" onclick="toggleCamera()">Start Camera</button>
 	<label for="edgeThresholdSlider">Edge Threshold: </label>
-	<input type="range" id="edgeThresholdSlider" min="60" max="100" value="72" step="1">
-	<span id="edgeThresholdValue">72</span>
+	<input type="range" id="edgeThresholdSlider" min="60" max="100" value="88" step="1">
+	<span id="edgeThresholdValue">88</span>
 	<button id="switchCameraButton" onclick="switchCamera()">Switch Camera</button>
 	<p id="activeCamera">Current Camera: Back</p>
     <button id="captureButton" onclick="startCaptures()" disabled>Start Captures</button>
@@ -77,7 +77,6 @@
 		    // Update the displayed resolution value
 		    resolutionValue.innerText = `${resolution}x${resolution}`;
 		}
-
 		// Initialize canvas with the default resolution (350x350)
 		updateResolution();
 
@@ -278,33 +277,52 @@
 		}
         // Generate audio from grayscale values
 		function generateAudio(grayscale) {
-		    const sampleRate = audioContext.sampleRate; // Sample rate of the audio
-		    const totalSamples = grayscale.length; // One sample per pixel
-		    const frequencyBase = 20; // Base frequency for the sine wave
-		    const frequencyRange = 20000 - frequencyBase; // Frequency range for grayscale mapping
-		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate); // Create audio buffer
-		    const channel = buffer.getChannelData(0); // Get the channel data array
+		    const canvas = document.getElementById('previewCanvas');
+		    const width = canvas.width;
+		    const height = canvas.height;
 
-		    // Generate audio samples based on grayscale values
+		    const sampleRate = audioContext.sampleRate; // Standard audio sample rate
+		    const totalSamples = grayscale.length; // One sample per pixel
+		    const frequencyBase = 200; // Minimum frequency
+		    const frequencyRange = 2000 - frequencyBase; // Frequency range
+		    const modulationRange = 50; // Vertical modulation range in Hz
+
+		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate);
+		    const channelData = buffer.getChannelData(0);
+
+		    // Generate sine wave based on grayscale and position
 		    for (let i = 0; i < grayscale.length; i++) {
 		        const pixelValue = grayscale[i]; // Grayscale value (normalized 0 to 1)
-		        const frequency = frequencyBase + pixelValue * frequencyRange; // Map pixel to frequency
+		        const y = Math.floor(i / width); // Row index
+		        const x = i % width; // Column index
+
+		        // Map horizontal position (x) to base frequency
+		        const frequency = frequencyBase + (x / width) * frequencyRange;
+
+		        // Map vertical position (y) to modulation frequency
+		        const modulation = (y / height) * modulationRange;
+
+		        // Combine base frequency and modulation
+		        const combinedFrequency = frequency + modulation;
+
 		        const amplitude = pixelValue; // Amplitude is proportional to grayscale value
 		        const t = i / sampleRate; // Time for the current sample
-		        channel[i] = amplitude * Math.sin(2 * Math.PI * frequency * t); // Generate sine wave
+
+		        // Add sine wave component
+		        channelData[i] = amplitude * Math.sin(2 * Math.PI * combinedFrequency * t);
 		    }
 
 		    // Normalize the audio signal
-		    const maxAmplitude = Math.max(...channel.map(Math.abs));
+		    const maxAmplitude = Math.max(...channelData.map(Math.abs));
 		    if (maxAmplitude > 0) {
-		        for (let i = 0; i < channel.length; i++) {
-		            channel[i] /= maxAmplitude;
+		        for (let i = 0; i < channelData.length; i++) {
+		            channelData[i] /= maxAmplitude;
 		        }
 		    }
 
 		    // Export the audio as WAV and play it
-		    const wavBlob = bufferToWave(buffer, totalSamples); // Convert buffer to WAV
-		    audioPlayer.src = URL.createObjectURL(wavBlob); // Set audio source
+		    const wavBlob = bufferToWave(buffer, totalSamples);
+		    audioPlayer.src = URL.createObjectURL(wavBlob);
 		    if (audioPlayer.paused) {
 		        audioPlayer.play().catch((err) => {
 		            console.error('Audio play error:', err);
