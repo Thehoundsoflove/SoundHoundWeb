@@ -160,25 +160,55 @@
             };
         }
         // Capture the current image from the camera feed
-        function captureImage() {
-            if (captureInProgress) {
-                // Capture image using the video feed
-                const canvas = document.getElementById('previewCanvas');
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height); // Draw video frame onto canvas
-                // Get image data
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const imageURL = canvas.toDataURL(); // Convert canvas to image URL
-                // Set the preview image source
-                const previewImage = document.getElementById('imagePreview');
-                previewImage.src = imageURL;
-                // Convert the captured image to a sine wave audio
-                const curveData = detectCurves(imageData);
-                const grayscale = convertToGrayscale(curveData);
-                // Generate sine wave audio from grayscale values
-                generateAudio(grayscale);
-            }
-        }
+		function captureImage() {
+		    if (captureInProgress) {
+		        // Capture image using the video feed
+		        const canvas = document.getElementById('previewCanvas');
+		        const ctx = canvas.getContext('2d');
+		        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height); // Draw video frame onto canvas
+
+		        // Get image data
+		        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+		        const imageURL = canvas.toDataURL(); // Convert canvas to image URL
+
+		        // Set the preview image source
+		        const previewImage = document.getElementById('imagePreview');
+		        previewImage.src = imageURL;
+
+		        // Convert the captured image to grayscale and calculate depth
+		        const { grayscale, depth } = convertToGrayscaleAndDepth(imageData);
+
+		        // Visualize the depth data
+		        visualizeDepth(depth);
+
+		        // Generate sine wave audio from grayscale values
+		        generateAudio(grayscale);
+		    }
+		}
+		
+		function visualizeDepth(depth) {
+		    const decodedCanvas = document.getElementById('decodedCanvas');
+		    const ctx = decodedCanvas.getContext('2d');
+		    const imageData = ctx.createImageData(decodedCanvas.width, decodedCanvas.height);
+
+		    for (let i = 0; i < depth.length; i++) {
+		        const depthValue = depth[i];
+
+		        // Map depth value to grayscale (0 to 255)
+		        const grayValue = Math.floor(depthValue * 255); // Map depth to 0-255
+
+		        // Set the pixel color based on depth
+		        const idx = i * 4;
+		        imageData.data[idx] = grayValue;     // Red
+		        imageData.data[idx + 1] = grayValue; // Green
+		        imageData.data[idx + 2] = grayValue; // Blue
+		        imageData.data[idx + 3] = 255;       // Alpha (fully opaque)
+		    }
+
+		    ctx.putImageData(imageData, 0, 0); // Draw depth map on canvas
+		}
+		
+
         // Detect edges in the captured image using Sobel edge detection
 		function detectCurves(imageData) {
 		    const width = imageData.width;
@@ -259,20 +289,31 @@
 		}
 
         // Convert detected edges to grayscale values
-        function convertToGrayscale(imageData) {
-            const pixels = imageData.data;
-            const grayscale = [];
-            for (let i = 0; i < pixels.length; i += 4) {
-                const alpha = pixels[i + 3];
-                if (alpha > 0) {
-                    const gray = pixels[i] / 255;
-                    grayscale.push(gray);
-                } else {
-                    grayscale.push(0); // Silence for non-curved regions
-                }
-            }
-            return grayscale;
-        }
+		// Convert detected edges to grayscale values and calculate depth
+		function convertToGrayscaleAndDepth(imageData) {
+		    const pixels = imageData.data;
+		    const grayscale = [];
+		    const depth = [];
+
+		    for (let i = 0; i < pixels.length; i += 4) {
+		        const alpha = pixels[i + 3];
+		        if (alpha > 0) {
+		            const gray = pixels[i] / 255; // Normalize to 0-1 range for grayscale
+		            grayscale.push(gray);
+
+		            // Estimate depth based on the grayscale value (inverse relation: darker = farther)
+		            const depthValue = 1 - gray; // You can tweak this depending on how you want depth to behave
+		            depth.push(depthValue);
+		        } else {
+		            grayscale.push(0); // Silence for non-curved regions
+		            depth.push(0); // No depth for non-curved regions
+		        }
+		    }
+
+		    return { grayscale, depth };
+		}
+
+
 		async function decodeAudio() {
 		    const decodeMessage = document.getElementById('decodeMessage');
 		    const decodedCanvas = document.getElementById('decodedCanvas');
@@ -408,3 +449,26 @@
             const channelData = buffer.getChannelData(0);
             for (let i = 0; i < totalSamples; i++) {
                 view.setInt16(offset, channelData[i] * 32767, true);
+                offset += 2;
+            }
+            return new Blob([wavArray], { type: 'audio/wav' });
+        }
+        // Write a string into the WAV header
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }		
+		const playAudio = () => {
+		    audioPlayer.src = URL.createObjectURL(wavBlob);
+		    audioPlayer.play().catch((err) => {
+		        console.error('Audio play error:', err);
+		    });
+		};
+
+		document.getElementById('captureButton').addEventListener('click', () => {
+		    startCaptures();
+		});
+    </script>
+</body>
+</html>
