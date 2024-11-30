@@ -70,6 +70,12 @@ By aligning spatial changes between frames with the thresholds of human motion p
 
 **Examples of output**
 
-<img width="361" alt="image" src="https://github.com/user-attachments/assets/42c7991b-88c3-4063-bb3e-228f109336fa">
+These were made at 350x350 resolution, using a Square wave which contains more information than the others.
 
-<img width="384" alt="Screenshot 2024-11-28 at 10 53 27 AM" src="https://github.com/user-attachments/assets/7ecf62e4-0f40-4455-a911-554c4db68f3a">
+It is not entirely lossless, but close enough.
+
+<img width="460" alt="Screenshot 2024-11-30 at 3 00 58 PM" src="https://github.com/user-attachments/assets/e0f8d5ae-4584-4ac7-88c5-adeb1553900f">
+
+<img width="427" alt="Screenshot 2024-11-30 at 3 01 23 PM" src="https://github.com/user-attachments/assets/c75f5576-ec00-44eb-aed0-2634767abbfe">
+
+
