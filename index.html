@@ -186,15 +186,15 @@
 		    const data = imageData.data;
 		    const curveData = new ImageData(width, height);
 		    const curvePixels = curveData.data;
-    
+
 		    // Use the dynamic edgeThreshold value from the slider
 		    const threshold = edgeThreshold;
 
 		    for (let y = 1; y < height - 1; y++) {
 		        for (let x = 1; x < width - 1; x++) {
 		            const i = (y * width + x) * 4;
-            
-		            // Sobel operator for edge detection (using the same kernel)
+    
+		            // Sobel operator for edge detection
 		            const gx =
 		                -1 * data[i - 4 - width * 4] + 1 * data[i + 4 - width * 4] +
 		                -2 * data[i - 4] + 2 * data[i + 4] +
@@ -202,16 +202,21 @@
 		            const gy =
 		                -1 * data[i - 4 - width * 4] - 2 * data[i - width * 4] - 1 * data[i + 4 - width * 4] +
 		                1 * data[i - 4 + width * 4] + 2 * data[i + width * 4] + 1 * data[i + 4 + width * 4];
-		            const magnitude = Math.sqrt(gx * gx + gy * gy);
+		            const magnitude = Math.sqrt(gx * gx + gy * gy); // Edge strength (gradient magnitude)
             
-		            // Apply the threshold to detect edges
+		            // Virtual depth: Invert the edge strength to approximate depth
+		            const depth = Math.min(255, Math.floor(255 * (1 - magnitude / 255)));  // Depth is stronger where edges are weaker
+            
+		            // Apply threshold to detect edges
 		            if (magnitude > threshold) {
-		                curvePixels[i] = 255;     // Red
-		                curvePixels[i + 1] = 255; // Green
-		                curvePixels[i + 2] = 255; // Blue
-		                curvePixels[i + 3] = 255; // Alpha (fully opaque)
+		                // Assign color based on depth and edge strength
+		                const depthColor = depth;  // Depth value controls grayscale intensity
+		                curvePixels[i] = depthColor;     // Red
+		                curvePixels[i + 1] = depthColor; // Green
+		                curvePixels[i + 2] = depthColor; // Blue
+		                curvePixels[i + 3] = 255;       // Full opacity
 		            } else {
-		                curvePixels[i + 3] = 0; // Transparency for non-edges
+		                curvePixels[i + 3] = 0; // Transparent for non-edges
 		            }
 		        }
 		    }
@@ -300,8 +305,10 @@
 		    // Generate audio samples based on grayscale values and selected waveform
 		    for (let i = 0; i < grayscale.length; i++) {
 		        const pixelValue = grayscale[i]; // Grayscale value (normalized 0 to 1)
+        
+		        // Map pixel value (grayscale) to a frequency
 		        const frequency = frequencyBase + pixelValue * frequencyRange; // Map pixel to frequency
-		        const amplitude = pixelValue; // Amplitude is proportional to grayscale value
+		        const amplitude = Math.max(0.1, pixelValue); // Avoid silence by setting a low minimum amplitude
 		        const t = i / sampleRate; // Time for the current sample
 
 		        let waveSample;
@@ -343,6 +350,7 @@
 		        });
 		    }
 		}
+
 
         // Convert AudioBuffer to WAV format
         function bufferToWave(buffer, totalSamples) {
