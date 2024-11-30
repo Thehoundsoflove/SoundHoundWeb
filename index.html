@@ -17,9 +17,10 @@
     </style>
 <body>
     <h1>Capture Image to Sine Wave Audio</h1>
-    <label for="resolutionSlider">Resolution: </label>
-    <input type="range" id="resolutionSlider" min="50" max="350" value="350" step="50">
-    <span id="resolutionValue">350x350</span>    <button id="startButton" onclick="toggleCamera()">Start Camera</button>
+	<label for="resolutionSlider">Resolution: </label>
+	<input type="range" id="resolutionSlider" min="50" max="350" value="350" step="1">
+	<span id="resolutionValue">350x350</span>
+    <button id="startButton" onclick="toggleCamera()">Start Camera</button>
 	<button id="switchCameraButton" onclick="switchCamera()">Switch Camera</button>
 	<p id="activeCamera">Current Camera: Back</p>
     <button id="captureButton" onclick="startCaptures()" disabled>Start Captures</button>
@@ -42,7 +43,6 @@
         let captureInterval;
 		
 		function updateResolution() {
-		    // Map the slider value to a resolution
 		    const resolution = resolutionSlider.value;
 		    const previewCanvas = document.getElementById('previewCanvas');
 		    const decodedCanvas = document.getElementById('decodedCanvas');
@@ -62,7 +62,7 @@
 
 		// Listen for changes to the slider
 		resolutionSlider.addEventListener('input', updateResolution);
-		// Toggle between front and back cameras
+        // Toggle between front and back cameras
         function switchCamera() {
             currentCamera = currentCamera === 'environment' ? 'user' : 'environment'; // Switch camera
             if (cameraOn) {
@@ -274,6 +274,65 @@
 		            channel[i] /= maxAmplitude;
 		        }
 		    }
+			
+			// Capture the current image from the camera feed and encode it to Base64
+			function captureImageAndEncodeToTexture() {
+			    const canvas = document.getElementById('previewCanvas');
+			    const ctx = canvas.getContext('2d');
+			    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height); // Draw video frame onto canvas
+
+			    // Convert the captured image to a Base64-encoded string
+			    const imageURL = canvas.toDataURL(); // Convert canvas to image URL (Base64 encoded)
+			    console.log("Base64 Encoded Image:", imageURL);
+
+			    // You can then embed this texture into the audio or store for further use
+			    const textureData = imageURL.split(',')[1]; // Remove the Data URL prefix to get pure Base64 data
+			    generateAudioWithTexture(textureData); // Use this Base64 encoded image in audio generation
+			}
+			// Generate audio from grayscale values and embed texture data
+			function generateAudioWithTexture(textureData) {
+			    const sampleRate = audioContext.sampleRate;
+			    const totalSamples = textureData.length; // Length of Base64 string as total samples
+
+			    // Map Base64 string into frequency data or audio signals
+			    const frequencyBase = 20; // Base frequency for the sine wave
+			    const frequencyRange = 20000 - frequencyBase; // Frequency range for mapping the texture data
+
+			    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate);
+			    const channel = buffer.getChannelData(0);
+
+			    // Generate audio samples by using the texture data (Base64 string)
+			    for (let i = 0; i < textureData.length; i++) {
+			        const pixelValue = textureData.charCodeAt(i) / 255; // Normalize Base64 character value to grayscale
+			        const frequency = frequencyBase + pixelValue * frequencyRange; // Map texture data to frequency
+			        const amplitude = pixelValue; // Amplitude is proportional to the texture data value
+			        const t = i / sampleRate; // Time for the current sample
+			        channel[i] = amplitude * Math.sin(2 * Math.PI * frequency * t); // Generate sine wave from texture data
+			    }
+
+			    // Normalize the audio signal
+			    const maxAmplitude = Math.max(...channel.map(Math.abs));
+			    if (maxAmplitude > 0) {
+			        for (let i = 0; i < channel.length; i++) {
+			            channel[i] /= maxAmplitude;
+			        }
+			    }
+
+			    // Export the audio as WAV and play it
+			    const wavBlob = bufferToWave(buffer, totalSamples);
+			    audioPlayer.src = URL.createObjectURL(wavBlob);
+			    if (audioPlayer.paused) {
+			        audioPlayer.play().catch((err) => {
+			            console.error('Audio play error:', err);
+			        });
+			    }
+			}
+
+			// Capture the image and encode it when the button is clicked
+			document.getElementById('captureButton').addEventListener('click', () => {
+			    captureImageAndEncodeToTexture();
+			});
+
 
 		    // Export the audio as WAV and play it
 		    const wavBlob = bufferToWave(buffer, totalSamples); // Convert buffer to WAV
