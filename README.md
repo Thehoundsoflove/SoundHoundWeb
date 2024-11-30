@@ -36,7 +36,39 @@ Each pixel in the image corresponds to a single audio sample (1 sample = 1 pixel
 
 The sine wave frequencies range from 20 Hz to 20,000 Hz, mapped based on the grayscale values of the image pixels.
 
-**Examples**
+**Rendering information**
+
+The brain calculates depth using difference fields primarily, but it has a fallback mode of calculating depth based on object size.
+
+By interacting with objects and receiving sensory feedback, users can build a mental "library" of object sizes, shapes, and this will help it build depth cues. 
+
+Over time, this library allows the brain to perform relative size and depth calculations more intuitively.
+
+Additionally, as users repeatedly interact with specific objects, their brain creates associations between the tool's audio output and the actual size, shape, or position of those objects.
+
+The brain uses this library to predict object properties without needing constant confirmation.
+
+Once enough objects are in the library, users can extrapolate novel shapes or sizes by comparing them to familiar entries.
+
+**Algorithms**
+
+This tool does not have many algorithms used in sensory substitution because I intend for the brain to generate them with use.
+
+For example, just starting at 50x50 resolution produces a faster wave, the benefit of this is to build algorithms for the association of objects.
+
+In standard vision:
+
+At 1 meter, two positions separated by 2 mm may be perceived as a single object moving smoothly if they change positions in less than around 20 ms
+
+At 10 meters, this would correspond to roughly 2 cm.
+
+100 meters, 20 cm.
+
+This is why I have a 50x50 resolution option, the speed will make it so there is a fluid link between the data in frames that will cause the brain to recognize the disparate pieces of data as belonging to the same object.
+
+By aligning spatial changes between frames with the thresholds of human motion perception, this ensures the brain interprets the input as belonging to the same object.
+
+**Examples of output**
 
 <img width="361" alt="image" src="https://github.com/user-attachments/assets/42c7991b-88c3-4063-bb3e-228f109336fa">
 
