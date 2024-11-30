@@ -259,37 +259,20 @@
 		}
 
         // Convert detected edges to grayscale values
-		// Convert detected edges to grayscale values and calculate depth
-		function convertToGrayscaleAndDepth(imageData) {
-		    const pixels = imageData.data;
-		    const grayscale = [];
-		    const depth = []; // Array to store depth values for each pixel
-		    for (let i = 0; i < pixels.length; i += 4) {
-		        const alpha = pixels[i + 3];
-		        if (alpha > 0) {
-		            // Get the grayscale value (normalized 0 to 1)
-		            const gray = pixels[i] / 255;
-
-		            // Calculate the depth (we map the grayscale to depth range)
-		            const pixelBrightness = Math.max(pixels[i], pixels[i + 1], pixels[i + 2]); // Get the brightness (R, G, or B)
-		            const mappedDepth = mapBrightnessToDepth(pixelBrightness); // Function to map brightness to depth value
-
-		            grayscale.push(gray); // Grayscale value
-		            depth.push(mappedDepth); // Depth value based on brightness
-		        } else {
-		            grayscale.push(0); // Silence for non-curved regions
-		            depth.push(255); // Default depth value for transparent regions (far away)
-		        }
-		    }
-		    return { grayscale, depth };
-		}
-
-		// Helper function to map brightness to depth
-		function mapBrightnessToDepth(brightness) {
-		    // Map brightness (0-255) to depth (0-255), where 0 is near and 255 is far
-		    return Math.floor((255 - brightness)); // The brighter the pixel, the closer it is
-		}
-
+        function convertToGrayscale(imageData) {
+            const pixels = imageData.data;
+            const grayscale = [];
+            for (let i = 0; i < pixels.length; i += 4) {
+                const alpha = pixels[i + 3];
+                if (alpha > 0) {
+                    const gray = pixels[i] / 255;
+                    grayscale.push(gray);
+                } else {
+                    grayscale.push(0); // Silence for non-curved regions
+                }
+            }
+            return grayscale;
+        }
 		async function decodeAudio() {
 		    const decodeMessage = document.getElementById('decodeMessage');
 		    const decodedCanvas = document.getElementById('decodedCanvas');
@@ -344,44 +327,47 @@
 		const waveformSelect = document.getElementById('waveformSelect');
 
 		// Modify the generateAudio function to handle different waveforms
-		function generateAudio(grayscale, depth) {
-		    const sampleRate = audioContext.sampleRate;
-		    const totalSamples = grayscale.length;
-		    const frequencyBase = 20;
-		    const frequencyRange = 20000 - frequencyBase;
-		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate);
-		    const channel = buffer.getChannelData(0);
+		function generateAudio(grayscale) {
+		    const sampleRate = audioContext.sampleRate; // Sample rate of the audio
+		    const totalSamples = grayscale.length; // One sample per pixel
+		    const frequencyBase = 20; // Base frequency for the waveform
+		    const frequencyRange = 20000 - frequencyBase; // Frequency range for grayscale mapping
+		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate); // Create audio buffer
+		    const channel = buffer.getChannelData(0); // Get the channel data array
 
 		    // Get the selected waveform type
 		    const waveformType = waveformSelect.value;
 
+		    // Generate audio samples based on grayscale values and selected waveform
 		    for (let i = 0; i < grayscale.length; i++) {
-		        const pixelValue = grayscale[i];
-		        const depthValue = depth[i]; // Get the depth for this pixel
-		        const frequency = frequencyBase + pixelValue * frequencyRange;
-		        const amplitude = pixelValue * (1 / (1 + depthValue / 255)); // Amplitude adjusts based on depth (closer = louder)
+		        const pixelValue = grayscale[i]; // Grayscale value (normalized 0 to 1)
+		        const frequency = frequencyBase + pixelValue * frequencyRange; // Map pixel to frequency
+		        const amplitude = pixelValue; // Amplitude is proportional to grayscale value
+		        const t = i / sampleRate; // Time for the current sample
 
-		        const t = i / sampleRate;
 		        let waveSample;
 
+		        // Switch between different waveforms
 		        switch (waveformType) {
 		            case 'sine':
-		                waveSample = amplitude * Math.sin(2 * Math.PI * frequency * t);
+		                waveSample = amplitude * Math.sin(2 * Math.PI * frequency * t); // Sine wave
 		                break;
 		            case 'square':
-		                waveSample = amplitude * (Math.sin(2 * Math.PI * frequency * t) >= 0 ? 1 : -1);
+		                // Square wave: Toggle between 1 and -1 based on sine wave zero crossings
+		                waveSample = amplitude * (Math.sin(2 * Math.PI * frequency * t) >= 0 ? 1 : -1); // Square wave
 		                break;
 		            case 'triangle':
-		                waveSample = amplitude * (2 * Math.abs(2 * (t * frequency - Math.floor(t * frequency + 0.5))) - 1);
+		                // Triangle wave: Use a sawtooth wave and reflect it to form a triangle
+		                waveSample = amplitude * (2 * Math.abs(2 * (t * frequency - Math.floor(t * frequency + 0.5))) - 1); // Triangular wave
 		                break;
 		            default:
-		                waveSample = amplitude * Math.sin(2 * Math.PI * frequency * t);
+		                waveSample = amplitude * Math.sin(2 * Math.PI * frequency * t); // Default to sine if nothing selected
 		        }
 
-		        channel[i] = waveSample;
+		        channel[i] = waveSample; // Set the waveform sample in the audio channel
 		    }
 
-		    // Normalize and play the audio
+		    // Normalize the audio signal
 		    const maxAmplitude = Math.max(...channel.map(Math.abs));
 		    if (maxAmplitude > 0) {
 		        for (let i = 0; i < channel.length; i++) {
@@ -389,8 +375,9 @@
 		        }
 		    }
 
-		    const wavBlob = bufferToWave(buffer, totalSamples);
-		    audioPlayer.src = URL.createObjectURL(wavBlob);
+		    // Export the audio as WAV and play it
+		    const wavBlob = bufferToWave(buffer, totalSamples); // Convert buffer to WAV
+		    audioPlayer.src = URL.createObjectURL(wavBlob); // Set audio source
 		    if (audioPlayer.paused) {
 		        audioPlayer.play().catch((err) => {
 		            console.error('Audio play error:', err);
@@ -421,26 +408,3 @@
             const channelData = buffer.getChannelData(0);
             for (let i = 0; i < totalSamples; i++) {
                 view.setInt16(offset, channelData[i] * 32767, true);
-                offset += 2;
-            }
-            return new Blob([wavArray], { type: 'audio/wav' });
-        }
-        // Write a string into the WAV header
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        }		
-		const playAudio = () => {
-		    audioPlayer.src = URL.createObjectURL(wavBlob);
-		    audioPlayer.play().catch((err) => {
-		        console.error('Audio play error:', err);
-		    });
-		};
-
-		document.getElementById('captureButton').addEventListener('click', () => {
-		    startCaptures();
-		});
-    </script>
-</body>
-</html>
