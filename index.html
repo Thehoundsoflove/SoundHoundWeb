@@ -380,12 +380,25 @@
 
 		        let waveSample;
 
-		        // Only Square wave logic
-		        const waveformType = waveformSelect.value;
-		        if (waveformType === 'square') {
-		            // Square wave: Toggle between 1 and -1 based on sine wave zero crossings
-		            // In audio, we make it more recognizable with a sharp click
-		            waveSample = amplitude * (Math.sign(Math.sin(2 * Math.PI * frequency * t))); // Square wave with a sharp click
+		        // Threshold frequency to distinguish between high and low frequencies
+		        const pulseThreshold = 1500; // Frequency above which we use a beep
+
+		        if (frequency >= pulseThreshold) {
+		            // For high frequencies, create sharp pulses (beeps)
+		            const pulseDuration = 0.005; // Duration of the pulse in seconds
+		            if (t % (1 / frequency) < pulseDuration) {
+		                waveSample = amplitude; // Sharp pulse for high frequencies (beep)
+		            } else {
+		                waveSample = 0; // No sound in between pulses
+		            }
+		        } else {
+		            // For low frequencies, create sharp clicks (low frequency pulses)
+		            const pulseDuration = 0.01; // Duration of the pulse in seconds
+		            if (t % (1 / frequency) < pulseDuration) {
+		                waveSample = amplitude; // Sharp pulse for low frequencies (click)
+		            } else {
+		                waveSample = 0; // No sound in between pulses
+		            }
 		        }
 
 		        channel[i] = waveSample; // Set the sample value in the channel
