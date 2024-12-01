@@ -81,4 +81,4 @@ By aligning spatial changes between frames within the thresholds of human motion
 
 **Examples**
 
-Juse convert an image to Grayscale, that's how accurate the representation is.
+Just convert an image to Grayscale, that's how accurate the representation is.
