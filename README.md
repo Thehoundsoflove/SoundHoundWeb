@@ -15,7 +15,7 @@ This tool is very different from available sensory substitution options in the f
 
 - Depth information is completely virtualized and relayed in mono.
 - Aimed toward mono users.
-- Uses a square wave, but has other wave options.
+- Uses a square wave.
 
 I have made this opensource so others can use this code as they see fit.
 
@@ -27,7 +27,7 @@ Edge Detection: Uses the Sobel edge detection algorithm to detect edges in the c
 
 Grayscale Conversion: The edges from the Sobel operator are converted into grayscale values, with detected edges being represented in white (255) and non-edges as black (0).
 
-Audio Generation: The grayscale values are then mapped to frequencies to generate sine wave audio. The amplitude of each sine wave is proportional to the pixel's brightness value.
+Audio Generation: The grayscale values are then mapped to frequencies to generate square wave audio. The amplitude of each square wave is proportional to the pixel's brightness value.
 
 **Audio output**
 
