@@ -7,6 +7,10 @@ The math behind the wave that generates the image is the same..
 
 Output from this webapp can be verified with the built-in decoder.
 
+I use github pages to test changes, the best time to clone this repo is at night US CST.
+
+https://thehoundsoflove.github.io/SoundHoundWeb/
+
 # SoundHound Webapp
 SoundHound is a pet project, it is a Sensory Substitution tool that has a very high resolution of 350x350.
 
