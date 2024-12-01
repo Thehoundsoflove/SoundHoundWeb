@@ -204,7 +204,7 @@
 		        imageData.data[idx + 2] = grayValue; // Blue
 		        imageData.data[idx + 3] = 255;       // Alpha (fully opaque)
 		    }
-
+		   // ctx.putImageData(imageData, 0, 0); // Draw depth map on canvas
 		}
 		
 
@@ -375,43 +375,72 @@
 		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate); // Create audio buffer
 		    const channel = buffer.getChannelData(0); // Get the channel data array
 
-		    // Get the selected waveform type
-		    const waveformType = waveformSelect.value;
+		    // Harmonic weights for flute-like sound
+		    const harmonics = [1.0, 0.5, 0.25, 0.125]; // Fundamental + 3 harmonics
 
-		    // Generate audio samples based on grayscale values and selected waveform
+		    // Envelope for smoother attack/decay, for more natural flute effect
+		    const attackTime = 0.01; // Attack time in seconds
+		    const decayTime = 0.2; // Decay time in seconds
+		    const sustainLevel = 0.8; // Sustain level (0-1)
+		    const releaseTime = 0.1; // Release time in seconds
+
+		    // Generate audio samples based on grayscale values
 		    for (let i = 0; i < grayscale.length; i++) {
 		        const pixelValue = grayscale[i]; // Grayscale value (normalized 0 to 1)
 		        const frequency = frequencyBase + pixelValue * frequencyRange; // Map pixel to frequency
 		        const amplitude = pixelValue; // Amplitude is proportional to grayscale value
 		        const t = i / sampleRate; // Time for the current sample
 
-		        let waveSample;
+		        // Apply an envelope (Attack, Decay, Sustain, Release)
+		        let envelope = 1;
+		        const attackSamples = Math.min(sampleRate * attackTime, totalSamples);
+		        const decaySamples = Math.min(sampleRate * decayTime, totalSamples - attackSamples);
+		        const releaseSamples = Math.min(sampleRate * releaseTime, totalSamples - attackSamples - decaySamples);
 
-		        // Switch between different waveforms
-		        switch (waveformType) {
-		            case 'sine':
-		                waveSample = amplitude * Math.sin(2 * Math.PI * frequency * t); // Sine wave
-		                break;
-		            case 'square':
-		                // Square wave: Toggle between 1 and -1 based on sine wave zero crossings
-		                waveSample = amplitude * (Math.sin(2 * Math.PI * frequency * t) >= 0 ? 1 : -1); // Square wave
-		                break;
-		            case 'triangle':
-		                // Triangle wave: Use a sawtooth wave and reflect it to form a triangle
-		                waveSample = amplitude * (2 * Math.abs(2 * (t * frequency - Math.floor(t * frequency + 0.5))) - 1); // Triangular wave
-		                break;
-		            default:
-		                waveSample = amplitude * Math.sin(2 * Math.PI * frequency * t); // Default to sine if nothing selected
+		        if (i < attackSamples) {
+		            envelope = i / attackSamples; // Attack phase
+		        } else if (i < attackSamples + decaySamples) {
+		            envelope = sustainLevel + (1 - sustainLevel) * (1 - (i - attackSamples) / decaySamples); // Decay phase
+		        } else if (i > totalSamples - releaseSamples) {
+		            envelope = sustainLevel * ((totalSamples - i) / releaseSamples); // Release phase
+		        } else {
+		            envelope = sustainLevel; // Sustain phase
 		        }
 
-		        channel[i] = waveSample; // Set the waveform sample in the audio channel
+		        // Determine waveform type (sine, square, triangle)
+		        let waveSample;
+		        const harmonicWeight = harmonics[0]; // Use only fundamental for now, can be extended
+
+		        switch (waveformSelect.value) {
+		            case 'sine':
+		                // Sine wave with envelope and amplitude
+		                waveSample = harmonicWeight * Math.sin(2 * Math.PI * frequency * t);
+		                break;
+		            case 'square':
+		                // Square wave with envelope and amplitude
+		                waveSample = harmonicWeight * (Math.sin(2 * Math.PI * frequency * t) >= 0 ? 1 : -1);
+		                break;
+		            case 'triangle':
+		                // Triangle wave with envelope and amplitude
+		                waveSample = harmonicWeight * (2 * Math.abs(2 * (t * frequency - Math.floor(t * frequency + 0.5))) - 1);
+		                break;
+		            default:
+		                // Default to sine if nothing selected
+		                waveSample = harmonicWeight * Math.sin(2 * Math.PI * frequency * t);
+		        }
+
+		        // Apply amplitude, envelope, and harmonic transformation
+		        waveSample *= amplitude * envelope;
+
+		        // Store wave sample into buffer
+		        channel[i] = waveSample;
 		    }
 
 		    // Normalize the audio signal
 		    const maxAmplitude = Math.max(...channel.map(Math.abs));
 		    if (maxAmplitude > 0) {
 		        for (let i = 0; i < channel.length; i++) {
-		            channel[i] /= maxAmplitude;
+		            channel[i] /= maxAmplitude; // Normalize to prevent clipping
 		        }
 		    }
 
