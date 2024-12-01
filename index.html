@@ -17,11 +17,8 @@
     </style>
 <body>
     <h1>Capture Image to Sine Wave Audio</h1>
-	<label for="waveformSelect">Waveform: </label>
 	<select id="waveformSelect">
-	    <option value="sine">Sine Wave</option>
 	    <option value="square" selected>Square Wave</option>
-	    <option value="triangle">Triangular Wave</option>
 	</select>
     <label for="resolutionSlider">Resolution: </label>
     <input type="range" id="resolutionSlider" min="50" max="350" value="100" step="50">
@@ -383,23 +380,12 @@
 
 		        let waveSample;
 
-		        // Switch between different waveforms (Square, Triangle, Sine)
+		        // Only Square wave logic
 		        const waveformType = waveformSelect.value;
-		        switch (waveformType) {
-		            case 'square':
-		                // Square wave: Toggle between 1 and -1 based on sine wave zero crossings
-		                // In audio, we make it more recognizable with a sharp click
-		                waveSample = amplitude * (Math.sign(Math.sin(2 * Math.PI * frequency * t))); // Square wave with a sharp click
-		                break;
-		            case 'triangle':
-		                // Triangle wave: Use a linear rise and fall pattern
-		                // For audio, we'll use periodic clicks or pulses with a smooth rise and fall
-		                waveSample = amplitude * (2 * Math.abs(2 * (t * frequency - Math.floor(t * frequency + 0.5))) - 1); // Triangle wave approximation
-		                break;
-		            default:
-		                // Sine wave: Standard sine wave for a smoother tone
-		                waveSample = amplitude * Math.sin(2 * Math.PI * frequency * t); // Sine wave beep
-		                break;
+		        if (waveformType === 'square') {
+		            // Square wave: Toggle between 1 and -1 based on sine wave zero crossings
+		            // In audio, we make it more recognizable with a sharp click
+		            waveSample = amplitude * (Math.sign(Math.sin(2 * Math.PI * frequency * t))); // Square wave with a sharp click
 		        }
 
 		        channel[i] = waveSample; // Set the sample value in the channel
@@ -422,6 +408,7 @@
 		        });
 		    }
 		}
+
 
         // Convert AudioBuffer to WAV format
         function bufferToWave(buffer, totalSamples) {
