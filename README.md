@@ -67,9 +67,3 @@ At 10 meters, this would correspond to roughly 2 cm.
 This is why I have a 50x50 resolution option, the speed will make it so there is a fluid link between the data in frames that will cause the brain to recognize the disparate pieces of data as belonging to the same object.
 
 By aligning spatial changes between frames with the thresholds of human motion perception, this ensures the brain interprets the input as belonging to the same object.
-
-**Examples of output**
-
-<img width="361" alt="image" src="https://github.com/user-attachments/assets/42c7991b-88c3-4063-bb3e-228f109336fa">
-
-<img width="384" alt="Screenshot 2024-11-28 at 10 53 27 AM" src="https://github.com/user-attachments/assets/7ecf62e4-0f40-4455-a911-554c4db68f3a">
