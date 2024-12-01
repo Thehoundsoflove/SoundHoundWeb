@@ -3,82 +3,44 @@ This Webapp works on and is optimized for **[Android]**!
 
 Output from this webapp can be verified with the built-in decoder.
 
-I will no longer use github pages to test changes, as this app has begun the live testing phase of development.
+I will no longer use github pages to test changes, just to update the tool as it is used and feedback is given on it.
+
+For example, I never intended to have to make a square wave analog, but after testing it the square wave was just too unintuitive and the brain could not really make actionable sense of it. The learning curve was just too high.
+
+Pulses based around the principle of a square wave mimic the natural firing of neurons, so information is presented to the brain in a highly familiar way and it really shows as there seems to be a natural compatibility between the input received and the usability of it, despite the extremely high speed it is relayed at.
+
+This app has begun the live testing phase of development.
 
 https://thehoundsoflove.github.io/SoundHoundWeb/
 
 # SoundHound Webapp
 
-SoundHound is a **prototype**, it is a Sensory Substitution tool that has a default resolution of 250x250 but is can be downscaled to as low as 50x50, or upscaled to 350x350.
+**Pulse Mapping:**
 
-This tool is very different from available sensory substitution options in the following ways:
+The system converts visual information into 22 microsecond pulses per pixel, with the length and intensity of the pulses correlating to visual characteristics like brightness and depth.
+The pulses convey detailed data, often undetectable by the conscious mind but still perceivable by the brain through auditory processing.
 
-- Depth information is completely virtualized and relayed in mono.
-- Aimed toward mono users.
-- Uses a square wave.
+The brain is highly attuned to changes in time and temporal patterns. Short, discrete pulses can provide information in a form that the brain can quickly identify and process.
 
-I have made this opensource so others can use this code as they see fit.
+Under this, with zero training it is possible for a user to notice right away when a decent-sized object is placed in front of them and then taken away.
 
-That being said, there are a lot of unknowns in regard to using a square wave to render a soundscape. I think this prototype might be the first of its kind.
+When the brain processes pulses, it can focus on the timing and spacing between them, making it easier to detect shifts in the environment or changes in sensory input. A pure frequency square wave, while providing a steady rhythm, can be harder for the brain to link to specific events unless it is directly related to a meaningful pattern or context.
 
-**Image Capturing**
+Pure frequency square waves can be mentally demanding to decode, especially if they are used to represent complex information. The brain may struggle to differentiate between different frequencies or associate them with real-world objects or events. Pulses, on the other hand, can be perceived as discrete units of information that are more easily mapped to specific objects or changes in the environment. This reduces cognitive load and can enhance the user's ability to make sense of the information.
 
-Edge Detection: Uses the Sobel edge detection algorithm to detect edges in the captured image, which is then used to create grayscale values.
+Pulses align better with how the brain encodes sensory information. Neurons often fire in bursts or patterns, and pulses mimic this biological mechanism of event detection. The brain is more sensitive to these bursts or patterns of activity than to continuous signals, making pulses a natural way to represent changes in the environment.
 
-Grayscale Conversion: The edges from the Sobel operator are converted into grayscale values, with detected edges being represented in white (255) and non-edges as black (0).
+This is really the aim of this project, to **completely remove conscious interpretation from the input received** and hand it to the more primal regions of the brain for processing.
 
-Audio Generation: The grayscale values are then mapped to frequencies to generate square wave audio. The amplitude of each square wave is proportional to the pixel's brightness value.
+**Depth Representation:**
 
-**Audio output**
+The system uses variations in pulse intensity or frequency shifts to represent the depth of objects in the environment. For example, objects that are closer might be represented with stronger or more frequent pulses, while more distant objects are conveyed with weaker pulses or less frequent intervals.
 
-The audio generation converts the grayscale values of each pixel into different wave frequencies.
+**Monophonic Output:**
 
-Each grayscale value corresponds to a frequency between 20 Hz and 20,000 Hz, which are used to modulate the audio signal.
+The system is optimized for mono-sound users, with the pulses being rendered as a singular stream of auditory feedback. This ensures that the sound output can be processed and understood by individuals who may only have hearing in one ear.
 
-The app generates a WAV audio file from the wave used and plays it using an <audio> element.
+**Edge and Feature Detection:**
 
-Audio normalization is applied to ensure the amplitude does not exceed the maximum range.
+As the system identifies the contours of objects, the resulting pulses can convey not only the object’s presence but also its outline, allowing users to perceive shapes and movements.
 
-**Audio encoding**
-
-The generated audio has a sample rate of 44,100 Hz.
-
-Each pixel in the image corresponds to a single audio sample (1 sample = 1 pixel), and the duration of each sample is approximately 22ish microseconds.
-
-**Depth**
-
-The brain calculates depth using difference fields primarily, but it has a fallback mode of calculating depth based on object size.
-
-By interacting with objects and receiving sensory feedback, users can build a mental "library" of object sizes, shapes, and this will help it build depth cues. 
-
-Over time, this library allows the brain to perform relative size and depth calculations more intuitively.
-
-To assist with the creation of this library, I have added an algorithm to create a virtual depth map.
-
-As users repeatedly interact with specific objects, their brain creates associations between the tool's audio output and the actual size, shape, or position of those objects.
-
-The brain uses this library to predict object properties without needing constant confirmation.
-
-Once enough objects are in the library, users can extrapolate novel shapes or sizes by comparing them to familiar entries.
-
-**Algorithms**
-
-This tool does not have many algorithms used in sensory substitution because I intend for the brain to generate them with use.
-
-For example, just starting at 50x50 resolution produces a faster wave, the benefit of this is to build algorithms for the association of objects.
-
-In standard vision:
-
-At 1 meter, two positions separated by 2 mm may be perceived as a single object moving smoothly if they change positions in less than around 20 ms
-
-At 10 meters, this would correspond to roughly 2 cm.
-
-100 meters, 20 cm.
-
-This is why I have a 50x50 resolution option, the speed will make it so there is a fluid link between the data in frames that will cause the brain to recognize the disparate pieces of data as belonging to the same object.
-
-By aligning spatial changes between frames within the thresholds of human motion perception, this ensures the brain interprets the input as belonging to the same object.
-
-**Examples**
-
-Just convert an image to Grayscale, that's how accurate the representation is.
