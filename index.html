@@ -370,28 +370,25 @@
 		function generateAudio(grayscale) {
 		    const sampleRate = audioContext.sampleRate; // Sample rate of the audio
 		    const totalSamples = grayscale.length; // One sample per pixel
-		    const frequencyBase = 200; // Base frequency for the waveform (adjusted for flute-like pitch)
-		    const frequencyRange = 4000; // Frequency range for grayscale mapping (reduced to avoid extremes)
+		    const frequencyBase = 20; // Base frequency for the waveform
+		    const frequencyRange = 20000 - frequencyBase; // Frequency range for grayscale mapping
 		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate); // Create audio buffer
 		    const channel = buffer.getChannelData(0); // Get the channel data array
 
-		    // Harmonic weights for Native American flute-like sound (more harmonic content)
-		    const harmonics = [1.0, 0.6, 0.3, 0.15]; // Fundamental + 3 harmonics for richer sound
+		    // Harmonic weights for flute-like sound
+		    const harmonics = [1.0, 0.5, 0.25, 0.125]; // Fundamental + 3 harmonics
 
 		    // Envelope for smoother attack/decay, for more natural flute effect
-		    const attackTime = 0.05; // Attack time in seconds (flutes have a soft attack)
-		    const decayTime = 0.3; // Decay time in seconds (flutes have longer decay)
-		    const sustainLevel = 0.7; // Sustain level (flute sustains at a moderate level)
-		    const releaseTime = 0.2; // Release time in seconds
+		    const attackTime = 0.01; // Attack time in seconds
+		    const decayTime = 0.2; // Decay time in seconds
+		    const sustainLevel = 0.8; // Sustain level (0-1)
+		    const releaseTime = 0.1; // Release time in seconds
 
 		    // Generate audio samples based on grayscale values
 		    for (let i = 0; i < grayscale.length; i++) {
 		        const pixelValue = grayscale[i]; // Grayscale value (normalized 0 to 1)
-        
-		        // Normalize grayscale value and map it to the frequency range
-		        const normalizedPixelValue = (pixelValue - 0.5) * 2; // Normalize grayscale to [-1, 1]
-		        const frequency = frequencyBase + normalizedPixelValue * frequencyRange; // Map pixel to frequency
-		        const amplitude = Math.pow(normalizedPixelValue, 0.5); // Apply square root to amplitude for softer transition
+		        const frequency = frequencyBase + pixelValue * frequencyRange; // Map pixel to frequency
+		        const amplitude = pixelValue; // Amplitude is proportional to grayscale value
 		        const t = i / sampleRate; // Time for the current sample
 
 		        // Apply an envelope (Attack, Decay, Sustain, Release)
@@ -410,32 +407,26 @@
 		            envelope = sustainLevel; // Sustain phase
 		        }
 
-		        // Add subtle vibrato to mimic flute
-		        const vibratoFrequency = 5; // Vibrato frequency in Hz (slow pitch variation)
-		        const vibratoDepth = 0.02; // Vibrato depth (intensity of pitch fluctuation)
-		        const vibrato = Math.sin(2 * Math.PI * vibratoFrequency * t) * vibratoDepth;
-		        const frequencyWithVibrato = frequency + vibrato;
-
 		        // Determine waveform type (sine, square, triangle)
 		        let waveSample;
-		        const harmonicWeight = harmonics[0]; // Use the fundamental for simplicity in this example
+		        const harmonicWeight = harmonics[0]; // Use only fundamental for now, can be extended
 
 		        switch (waveformSelect.value) {
 		            case 'sine':
 		                // Sine wave with envelope and amplitude
-		                waveSample = harmonicWeight * Math.sin(2 * Math.PI * frequencyWithVibrato * t);
+		                waveSample = harmonicWeight * Math.sin(2 * Math.PI * frequency * t);
 		                break;
 		            case 'square':
 		                // Square wave with envelope and amplitude
-		                waveSample = harmonicWeight * (Math.sin(2 * Math.PI * frequencyWithVibrato * t) >= 0 ? 1 : -1);
+		                waveSample = harmonicWeight * (Math.sin(2 * Math.PI * frequency * t) >= 0 ? 1 : -1);
 		                break;
 		            case 'triangle':
 		                // Triangle wave with envelope and amplitude
-		                waveSample = harmonicWeight * (2 * Math.abs(2 * (t * frequencyWithVibrato - Math.floor(t * frequencyWithVibrato + 0.5))) - 1);
+		                waveSample = harmonicWeight * (2 * Math.abs(2 * (t * frequency - Math.floor(t * frequency + 0.5))) - 1);
 		                break;
 		            default:
 		                // Default to sine if nothing selected
-		                waveSample = harmonicWeight * Math.sin(2 * Math.PI * frequencyWithVibrato * t);
+		                waveSample = harmonicWeight * Math.sin(2 * Math.PI * frequency * t);
 		        }
 
 		        // Apply amplitude, envelope, and harmonic transformation
@@ -462,7 +453,6 @@
 		        });
 		    }
 		}
-
 
         // Convert AudioBuffer to WAV format
         function bufferToWave(buffer, totalSamples) {
