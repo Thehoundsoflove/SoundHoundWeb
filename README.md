@@ -9,7 +9,7 @@ https://thehoundsoflove.github.io/SoundHoundWeb/
 
 # SoundHound Webapp
 
-SoundHound is a **prototype**, it is a Sensory Substitution tool that has a default resolution of 350x350 but is can be downscaled to as low as 50x50.
+SoundHound is a **prototype**, it is a Sensory Substitution tool that has a default resolution of 250x250 but is can be downscaled to as low as 50x50, or upscaled to 350x350.
 
 This tool is very different from available sensory substitution options in the following ways:
 
