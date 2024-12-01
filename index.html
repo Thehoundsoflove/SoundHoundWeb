@@ -17,9 +17,6 @@
     </style>
 <body>
     <h1>Capture Image to Sine Wave Audio</h1>
-	<select id="waveformSelect">
-	    <option value="square" selected>Square Wave</option>
-	</select>
     <label for="resolutionSlider">Resolution: </label>
     <input type="range" id="resolutionSlider" min="50" max="350" value="150" step="50">
     <span id="resolutionValue">150x150</span>    <button id="startButton" onclick="toggleCamera()">Start Camera</button>
@@ -359,8 +356,6 @@
 		        decodeMessage.innerText = 'Error decoding audio.';
 		    }
 		}
-		// Get the waveform select dropdown
-		const waveformSelect = document.getElementById('waveformSelect');
 
 		// Modify the generateAudio function to handle different waveforms
 		function generateAudio(grayscale) {
