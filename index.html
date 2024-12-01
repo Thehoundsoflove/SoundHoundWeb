@@ -89,6 +89,7 @@
 
 		// Listen for changes to the slider
 		resolutionSlider.addEventListener('input', updateResolution);
+
 		// Toggle between front and back cameras
         function switchCamera() {
             currentCamera = currentCamera === 'environment' ? 'user' : 'environment'; // Switch camera
@@ -97,6 +98,7 @@
                 startCamera(); // Restart camera with new source
             }
         }
+
         // Start or stop the camera
         function toggleCamera() {
             if (cameraOn) {
@@ -110,11 +112,13 @@
                 document.getElementById('captureButton').disabled = false;
             }
         }	
+
 		// Update the active camera label dynamically
 		function updateCameraLabel() {
 		    const cameraLabel = document.getElementById('activeCamera');
 		    cameraLabel.innerText = `Current Camera: ${currentCamera === 'environment' ? 'Back' : 'Front'}`;
 		}
+
 		// Modify the switchCamera function to update the label
 		function switchCamera() {
 		    currentCamera = currentCamera === 'environment' ? 'user' : 'environment'; // Switch camera
@@ -124,8 +128,10 @@
 		        startCamera(); // Restart camera with the new source
 		    }
 		}
+
 		// Initialize the label when the page loads
 		updateCameraLabel();		
+
         // Start the camera with the current source (front/back)
         function startCamera() {
             const constraints = {
@@ -142,10 +148,12 @@
                     console.error('Error accessing camera: ' + err);
                 });
         }
+
         // Stop the camera
         function stopCamera() {
             videoStream.getTracks().forEach(track => track.stop());
         }
+		
         // Start the automated capture process
         function startCaptures() {
             if (captureInProgress) return; // Prevent overlapping captures
@@ -159,6 +167,7 @@
                 }
             };
         }
+
         // Capture the current image from the camera feed
 		function captureImage() {
 		    if (captureInProgress) {
@@ -186,6 +195,7 @@
 		    }
 		}
 		
+		// Draw the virtual depth map onto the canvas (disabled because I only use it to verify the depth map works)
 		function visualizeDepth(depth) {
 		    const decodedCanvas = document.getElementById('decodedCanvas');
 		    const ctx = decodedCanvas.getContext('2d');
@@ -207,8 +217,7 @@
 
 		}
 		
-
-        // Detect edges in the captured image using Sobel edge detection
+        // Detect curved edges in the captured image using Sobel edge detection
 		function detectCurves(imageData) {
 		    const width = imageData.width;
 		    const height = imageData.height;
@@ -312,7 +321,6 @@
 		    return { grayscale, depth };
 		}
 
-
 		async function decodeAudio() {
 		    const decodeMessage = document.getElementById('decodeMessage');
 		    const decodedCanvas = document.getElementById('decodedCanvas');
@@ -363,6 +371,7 @@
 		        decodeMessage.innerText = 'Error decoding audio.';
 		    }
 		}
+
 		// Get the waveform select dropdown
 		const waveformSelect = document.getElementById('waveformSelect');
 
