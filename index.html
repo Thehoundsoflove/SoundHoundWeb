@@ -175,7 +175,7 @@
 		        // Visualize the depth data
 		        visualizeDepth(depth);
 
-		        // Generate sine wave audio from grayscale values
+		        // Generate pulse-chain from grayscale values
 		        generateAudio(grayscale);
 		    }
 		}
@@ -382,7 +382,7 @@
 
 		        if (frequency >= pulseThreshold) {
 		            // For high frequencies, create sharp pulses (beeps)
-		            const pulseDuration = 0.01; // Duration of the pulse in seconds
+		            const pulseDuration = 0.03; // Duration of the pulse in seconds
 		            if (t % (1 / frequency) < pulseDuration) {
 		                waveSample = amplitude; // Sharp pulse for high frequencies (beep)
 		            } else if (t % (1 / frequency) < pulseDuration + delayBetweenPulses) {
@@ -392,7 +392,7 @@
 		            }
 		        } else {
 		            // For low frequencies, create sharp clicks (low frequency pulses)
-		            const pulseDuration = 0.01; // Duration of the pulse in seconds
+		            const pulseDuration = 0.2; // Duration of the pulse in seconds
 		            if (t % (1 / frequency) < pulseDuration) {
 		                waveSample = amplitude; // Sharp pulse for low frequencies (click)
 		            } else if (t % (1 / frequency) < pulseDuration + delayBetweenPulses) {
