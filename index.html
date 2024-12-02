@@ -416,7 +416,7 @@
 
 		        if (frequency >= pulseThreshold) {
 		            // For high frequencies, create square wave pulses (beeps)
-		            const pulseDuration = 0.00085; // Short pulse duration for high frequencies
+		            const pulseDuration = 0.00065; // Short pulse duration for high frequencies
 		            const period = 1 / frequency; // Period of the square wave
 		            const pulseCyclePosition = t % period;
 
@@ -428,7 +428,7 @@
 		            }
 		        } else {
 		            // For low frequencies, create square wave pulses (clicks)
-		            const pulseDuration = 0.0009; // Longer pulse duration for low frequencies
+		            const pulseDuration = 0.0008; // Longer pulse duration for low frequencies
 		            const period = 1 / frequency; // Period of the square wave
 		            const pulseCyclePosition = t % period;
 
