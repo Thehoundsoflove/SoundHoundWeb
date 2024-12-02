@@ -292,7 +292,7 @@
 		        if (alpha > 0) {
 		            const gray = pixels[i] / 255; // Normalize to 0-1 range for grayscale
 		            grayscale.push(gray);
-					
+
 		            // Estimate depth based on the grayscale value (inverse relation: darker = farther)
 		            const depthValue = 1 - gray; // You can tweak this depending on how you want depth to behave
 		            depth.push(depthValue);
@@ -304,7 +304,6 @@
 
 		    return { grayscale, depth };
 		}
-
 
 
 		async function decodeAudio() {
@@ -381,24 +380,28 @@
 		        const pulseThreshold = 1500; // Frequency above which we use a beep
 
 		        if (frequency >= pulseThreshold) {
-		            // For high frequencies, create sharp pulses (beeps)
+		            // For high frequencies, create square wave pulses (beeps)
 		            const pulseDuration = 0.00065; // Short pulse duration for high frequencies
-		            if (t % (1 / frequency) < pulseDuration) {
-		                waveSample = amplitude; // Sharp pulse for high frequencies (beep)
-		            } else if (t % (1 / frequency) < pulseDuration + delayBetweenPulses) {
-		                waveSample = 0; // Add delay (silence) after the pulse
+		            const period = 1 / frequency; // Period of the square wave
+		            const pulseCyclePosition = t % period;
+
+		            // Define square wave: toggles between amplitude and 0
+		            if (pulseCyclePosition < pulseDuration) {
+		                waveSample = amplitude; // On state
 		            } else {
-		                waveSample = 0; // No sound in between pulses
+		                waveSample = 0; // Off state
 		            }
 		        } else {
-		            // For low frequencies, create sharp clicks (low frequency pulses)
+		            // For low frequencies, create square wave pulses (clicks)
 		            const pulseDuration = 0.0008; // Longer pulse duration for low frequencies
-		            if (t % (1 / frequency) < pulseDuration) {
-		                waveSample = amplitude; // Sharp pulse for low frequencies (click)
-		            } else if (t % (1 / frequency) < pulseDuration + delayBetweenPulses) {
-		                waveSample = 0; // Add delay (silence) after the pulse
+		            const period = 1 / frequency; // Period of the square wave
+		            const pulseCyclePosition = t % period;
+
+		            // Define square wave: toggles between amplitude and 0
+		            if (pulseCyclePosition < pulseDuration) {
+		                waveSample = amplitude; // On state
 		            } else {
-		                waveSample = 0; // No sound in between pulses
+		                waveSample = 0; // Off state
 		            }
 		        }
 
@@ -422,6 +425,7 @@
 		        });
 		    }
 		}
+
 
 
         // Convert AudioBuffer to WAV format
