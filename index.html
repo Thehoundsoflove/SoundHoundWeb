@@ -292,8 +292,7 @@
 		        if (alpha > 0) {
 		            const gray = pixels[i] / 255; // Normalize to 0-1 range for grayscale
 		            grayscale.push(gray);
-		            grayscale.push(gray); // Sample the pixel twice
-
+					
 		            // Estimate depth based on the grayscale value (inverse relation: darker = farther)
 		            const depthValue = 1 - gray; // You can tweak this depending on how you want depth to behave
 		            depth.push(depthValue);
