@@ -44,3 +44,24 @@ The system is optimized for mono-sound users, with the pulses being rendered as 
 
 As the system identifies the contours of objects, the resulting pulses can convey not only the object’s presence but also its outline, allowing users to perceive shapes and movements.
 
+**[Training]**
+
+Now that I've begun serious testing, I will document the findings here.
+
+**Day 1** - Time spent: 20 minutes
+**50x50 - On a surface with no texture**
+* This tool has such high-fidelity output, that highly textured surfaces create a tremendous amount of pulse-noise.
+
+- It is possible for a user to clearly tell when an object had been placed, multiple objects were not tested.
+  
+- Location of object can be determined, sometimes the camera would have to be moved around to determine where it was relative to the camera.
+* It seems the 'size' of the pulse signature of the object is larger when it is placed closer to the user, this is what I was hoping for when trying to virtualize depth, it shows there is a metric for object location based on size the brain is using.
+  
+- Somehow, position of the object relative to the user can be determined; but could this be a coincidence? The surface size (a table) was not huge.
+* User described having a 'knowing' of where the object was most of the time, they seemed to know the general position of the object relative to the camera, but could not explain how they knew. The only thing that confused them was a crack in the table, but once they knew the location of the crack it was a non-issue.
+
+Yet, it was registered as a 'second object' by the algorithm of the tool, it is something i want to note.
+
+I will continue this to have the user train at 50x50 for 1 week before introducing a second object, to see if the user can perceive a difference in the pulse signature of it.
+
+For now, I want to verify that they can somehow locate where the object is, this should not really be possible with just 20 minutes of dedicated training so I'm chalking it up to a coincidence, but we'll see.
