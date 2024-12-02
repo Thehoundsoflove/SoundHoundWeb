@@ -292,18 +292,23 @@
 		        if (alpha > 0) {
 		            const gray = pixels[i] / 255; // Normalize to 0-1 range for grayscale
 		            grayscale.push(gray);
+		            grayscale.push(gray); // Sample the pixel twice
 
 		            // Estimate depth based on the grayscale value (inverse relation: darker = farther)
 		            const depthValue = 1 - gray; // You can tweak this depending on how you want depth to behave
 		            depth.push(depthValue);
+		            depth.push(depthValue); // Sample depth twice
 		        } else {
 		            grayscale.push(0); // Silence for non-curved regions
+		            grayscale.push(0); // Silence for non-curved regions
+		            depth.push(0); // No depth for non-curved regions
 		            depth.push(0); // No depth for non-curved regions
 		        }
 		    }
 
 		    return { grayscale, depth };
 		}
+
 
 
 		async function decodeAudio() {
@@ -357,7 +362,6 @@
 		    }
 		}
 
-		// Modify the generateAudio function to handle different waveforms
 		function generateAudio(grayscale) {
 		    const sampleRate = audioContext.sampleRate;
 		    const totalSamples = grayscale.length;
@@ -382,7 +386,7 @@
 
 		        if (frequency >= pulseThreshold) {
 		            // For high frequencies, create sharp pulses (beeps)
-		            const pulseDuration = 0.03; // Duration of the pulse in seconds
+		            const pulseDuration = 0.001; // Short pulse duration for high frequencies
 		            if (t % (1 / frequency) < pulseDuration) {
 		                waveSample = amplitude; // Sharp pulse for high frequencies (beep)
 		            } else if (t % (1 / frequency) < pulseDuration + delayBetweenPulses) {
@@ -392,7 +396,7 @@
 		            }
 		        } else {
 		            // For low frequencies, create sharp clicks (low frequency pulses)
-		            const pulseDuration = 0.2; // Duration of the pulse in seconds
+		            const pulseDuration = 0.002; // Longer pulse duration for low frequencies
 		            if (t % (1 / frequency) < pulseDuration) {
 		                waveSample = amplitude; // Sharp pulse for low frequencies (click)
 		            } else if (t % (1 / frequency) < pulseDuration + delayBetweenPulses) {
@@ -422,6 +426,7 @@
 		        });
 		    }
 		}
+
 
         // Convert AudioBuffer to WAV format
 		function bufferToWave(buffer, totalSamples) {
