@@ -386,7 +386,7 @@
 
 		        if (frequency >= pulseThreshold) {
 		            // For high frequencies, create sharp pulses (beeps)
-		            const pulseDuration = 0.001; // Short pulse duration for high frequencies
+		            const pulseDuration = 0.00065; // Short pulse duration for high frequencies
 		            if (t % (1 / frequency) < pulseDuration) {
 		                waveSample = amplitude; // Sharp pulse for high frequencies (beep)
 		            } else if (t % (1 / frequency) < pulseDuration + delayBetweenPulses) {
@@ -396,7 +396,7 @@
 		            }
 		        } else {
 		            // For low frequencies, create sharp clicks (low frequency pulses)
-		            const pulseDuration = 0.002; // Longer pulse duration for low frequencies
+		            const pulseDuration = 0.0008; // Longer pulse duration for low frequencies
 		            if (t % (1 / frequency) < pulseDuration) {
 		                waveSample = amplitude; // Sharp pulse for low frequencies (click)
 		            } else if (t % (1 / frequency) < pulseDuration + delayBetweenPulses) {
