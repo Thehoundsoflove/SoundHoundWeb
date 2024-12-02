@@ -366,6 +366,8 @@
 		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate);
 		    const channel = buffer.getChannelData(0);
 
+		    const delayBetweenPulses = 0.020; // Delay between pulses in seconds (1ms)
+
 		    // Generate audio samples based on grayscale values
 		    for (let i = 0; i < grayscale.length; i++) {
 		        const pixelValue = grayscale[i]; // Grayscale value (0 to 1)
@@ -383,6 +385,8 @@
 		            const pulseDuration = 0.005; // Duration of the pulse in seconds
 		            if (t % (1 / frequency) < pulseDuration) {
 		                waveSample = amplitude; // Sharp pulse for high frequencies (beep)
+		            } else if (t % (1 / frequency) < pulseDuration + delayBetweenPulses) {
+		                waveSample = 0; // Add delay (silence) after the pulse
 		            } else {
 		                waveSample = 0; // No sound in between pulses
 		            }
@@ -391,6 +395,8 @@
 		            const pulseDuration = 0.01; // Duration of the pulse in seconds
 		            if (t % (1 / frequency) < pulseDuration) {
 		                waveSample = amplitude; // Sharp pulse for low frequencies (click)
+		            } else if (t % (1 / frequency) < pulseDuration + delayBetweenPulses) {
+		                waveSample = 0; // Add delay (silence) after the pulse
 		            } else {
 		                waveSample = 0; // No sound in between pulses
 		            }
@@ -416,7 +422,6 @@
 		        });
 		    }
 		}
-
 
         // Convert AudioBuffer to WAV format
         function bufferToWave(buffer, totalSamples) {
