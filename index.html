@@ -297,11 +297,8 @@
 		            // Estimate depth based on the grayscale value (inverse relation: darker = farther)
 		            const depthValue = 1 - gray; // You can tweak this depending on how you want depth to behave
 		            depth.push(depthValue);
-		            depth.push(depthValue); // Sample depth twice
 		        } else {
 		            grayscale.push(0); // Silence for non-curved regions
-		            grayscale.push(0); // Silence for non-curved regions
-		            depth.push(0); // No depth for non-curved regions
 		            depth.push(0); // No depth for non-curved regions
 		        }
 		    }
