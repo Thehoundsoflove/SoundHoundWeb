@@ -382,7 +382,7 @@
 
 		        if (frequency >= pulseThreshold) {
 		            // For high frequencies, create sharp pulses (beeps)
-		            const pulseDuration = 0.005; // Duration of the pulse in seconds
+		            const pulseDuration = 0.01; // Duration of the pulse in seconds
 		            if (t % (1 / frequency) < pulseDuration) {
 		                waveSample = amplitude; // Sharp pulse for high frequencies (beep)
 		            } else if (t % (1 / frequency) < pulseDuration + delayBetweenPulses) {
