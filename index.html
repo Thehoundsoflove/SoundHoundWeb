@@ -175,7 +175,7 @@
 		        // Visualize the depth data
 		        visualizeDepth(depth);
 
-		        // Generate pulse-chain from grayscale values
+		        // Generate sine wave audio from grayscale values
 		        generateAudio(grayscale);
 		    }
 		}
@@ -357,6 +357,7 @@
 		    }
 		}
 
+		// Modify the generateAudio function to handle different waveforms
 		function generateAudio(grayscale) {
 		    const sampleRate = audioContext.sampleRate;
 		    const totalSamples = grayscale.length;
@@ -364,8 +365,6 @@
 		    const frequencyRange = 3000; // Maximum frequency for mapping
 		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate);
 		    const channel = buffer.getChannelData(0);
-
-		    const delayBetweenPulses = 0.020; // Delay between pulses in seconds (1ms)
 
 		    // Generate audio samples based on grayscale values
 		    for (let i = 0; i < grayscale.length; i++) {
@@ -380,28 +379,20 @@
 		        const pulseThreshold = 1500; // Frequency above which we use a beep
 
 		        if (frequency >= pulseThreshold) {
-		            // For high frequencies, create square wave pulses (beeps)
-		            const pulseDuration = 0.00065; // Short pulse duration for high frequencies
-		            const period = 1 / frequency; // Period of the square wave
-		            const pulseCyclePosition = t % period;
-
-		            // Define square wave: toggles between amplitude and 0
-		            if (pulseCyclePosition < pulseDuration) {
-		                waveSample = amplitude; // On state
+		            // For high frequencies, create sharp pulses (beeps)
+		            const pulseDuration = 0.005; // Duration of the pulse in seconds
+		            if (t % (1 / frequency) < pulseDuration) {
+		                waveSample = amplitude; // Sharp pulse for high frequencies (beep)
 		            } else {
-		                waveSample = 0; // Off state
+		                waveSample = 0; // No sound in between pulses
 		            }
 		        } else {
-		            // For low frequencies, create square wave pulses (clicks)
-		            const pulseDuration = 0.0008; // Longer pulse duration for low frequencies
-		            const period = 1 / frequency; // Period of the square wave
-		            const pulseCyclePosition = t % period;
-
-		            // Define square wave: toggles between amplitude and 0
-		            if (pulseCyclePosition < pulseDuration) {
-		                waveSample = amplitude; // On state
+		            // For low frequencies, create sharp clicks (low frequency pulses)
+		            const pulseDuration = 0.01; // Duration of the pulse in seconds
+		            if (t % (1 / frequency) < pulseDuration) {
+		                waveSample = amplitude; // Sharp pulse for low frequencies (click)
 		            } else {
-		                waveSample = 0; // Off state
+		                waveSample = 0; // No sound in between pulses
 		            }
 		        }
 
@@ -427,45 +418,39 @@
 		}
 
 
-
         // Convert AudioBuffer to WAV format
-		function bufferToWave(buffer, totalSamples) {
-		    const wavBuffer = new Uint8Array(44 + totalSamples * 2);
-		    const view = new DataView(wavBuffer.buffer);
-
-		    // RIFF Header
-		    writeString(view, 0, 'RIFF');
-		    view.setUint32(4, 36 + totalSamples * 2, true);
-		    writeString(view, 8, 'WAVE');
-
-		    // Format Chunk
-		    writeString(view, 12, 'fmt ');
-		    view.setUint32(16, 16, true);  // Size of this chunk
-		    view.setUint16(20, 1, true);   // Audio format (PCM)
-		    view.setUint16(22, 1, true);   // Number of channels
-		    view.setUint32(24, buffer.sampleRate, true); // Sample rate
-		    view.setUint32(28, buffer.sampleRate * 2, true); // Byte rate
-		    view.setUint16(32, 2, true);   // Block align
-		    view.setUint16(34, 16, true);  // Bits per sample
-
-		    // Data Chunk
-		    writeString(view, 36, 'data');
-		    view.setUint32(40, totalSamples * 2, true); // Size of data
-		    const channelData = buffer.getChannelData(0);
-		    for (let i = 0, offset = 44; i < totalSamples; i++, offset += 2) {
-		        const sample = Math.max(-1, Math.min(1, channelData[i])); // Clamp
-		        view.setInt16(offset, sample * 0x7FFF, true); // Convert to 16-bit PCM
-		    }
-
-		    return new Blob([wavBuffer], { type: 'audio/wav' });
-		}
-
-		function writeString(view, offset, string) {
-		    for (let i = 0; i < string.length; i++) {
-		        view.setUint8(offset + i, string.charCodeAt(i));
-		    }
-		}
-		
+        function bufferToWave(buffer, totalSamples) {
+            const wavArray = new Uint8Array(44 + totalSamples * 2);
+            const view = new DataView(wavArray.buffer);
+            // RIFF header
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + totalSamples * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, audioContext.sampleRate, true);
+            view.setUint32(28, audioContext.sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, totalSamples * 2, true);
+            // Audio data
+            let offset = 44;
+            const channelData = buffer.getChannelData(0);
+            for (let i = 0; i < totalSamples; i++) {
+                view.setInt16(offset, channelData[i] * 32767, true);
+                offset += 2;
+            }
+            return new Blob([wavArray], { type: 'audio/wav' });
+        }
+        // Write a string into the WAV header
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }		
 		const playAudio = () => {
 		    audioPlayer.src = URL.createObjectURL(wavBlob);
 		    audioPlayer.play().catch((err) => {
