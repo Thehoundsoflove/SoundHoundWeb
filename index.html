@@ -16,7 +16,15 @@
         }
     </style>
 <body>
-    <h1>Capture Image to Sine Wave Audio</h1>
+    <h1>Capture Image to Pulse Audio</h1>
+	<label for="highFreqPulseDurationSlider">High Frequency Pulse Duration (µs): </label>
+	<input type="range" id="highFreqPulseDurationSlider" min="20" max="400" value="400" step="1">
+	<span id="highFreqPulseDurationValue">400</span> µs
+	<br>
+	<label for="lowFreqPulseDurationSlider">Low Frequency Pulse Duration (µs): </label>
+	<input type="range" id="lowFreqPulseDurationSlider" min="20" max="300" value="300" step="1">
+	<span id="lowFreqPulseDurationValue">300</span> µs
+	<br>
     <label for="resolutionSlider">Resolution: </label>
     <input type="range" id="resolutionSlider" min="50" max="350" value="150" step="50">
     <span id="resolutionValue">150x150</span>    <button id="startButton" onclick="toggleCamera()">Start Camera</button>
@@ -33,6 +41,33 @@
 	<canvas id="decodedCanvas" width="350" height="350"></canvas>
 	<p id="decodeMessage"></p>
     <script>
+		
+		// Get the sliders and their corresponding value displays
+		const highFreqPulseDurationSlider = document.getElementById('highFreqPulseDurationSlider');
+		const highFreqPulseDurationValue = document.getElementById('highFreqPulseDurationValue');
+		const lowFreqPulseDurationSlider = document.getElementById('lowFreqPulseDurationSlider');
+		const lowFreqPulseDurationValue = document.getElementById('lowFreqPulseDurationValue');
+
+		// Initialize pulseDuration values in microseconds
+		let highFreqPulseDuration = highFreqPulseDurationSlider.value / 1000000; // Convert to seconds
+		let lowFreqPulseDuration = lowFreqPulseDurationSlider.value / 1000000; // Convert to seconds
+
+		// Update the displayed values and pulse durations dynamically
+		function updatePulseDuration() {
+		    highFreqPulseDuration = highFreqPulseDurationSlider.value / 1000000; // Convert to seconds
+		    highFreqPulseDurationValue.innerText = highFreqPulseDurationSlider.value;
+
+		    lowFreqPulseDuration = lowFreqPulseDurationSlider.value / 1000000; // Convert to seconds
+		    lowFreqPulseDurationValue.innerText = lowFreqPulseDurationSlider.value;
+		}
+
+		// Add event listeners to sliders
+		highFreqPulseDurationSlider.addEventListener('input', updatePulseDuration);
+		lowFreqPulseDurationSlider.addEventListener('input', updatePulseDuration);
+
+		// Initialize the displayed values
+		updatePulseDuration();
+		
 		// Get the slider and the span that displays the threshold value
 		const edgeThresholdSlider = document.getElementById('edgeThresholdSlider');
 		const edgeThresholdValue = document.getElementById('edgeThresholdValue');
@@ -359,44 +394,51 @@
 
 		// Modify the generateAudio function to handle different waveforms
 		function generateAudio(grayscale) {
-		    const sampleRate = audioContext.sampleRate;
-		    const totalSamples = grayscale.length;
-		    const frequencyBase = 500; // Start frequency (in Hz)
-		    const frequencyRange = 3000; // Maximum frequency for mapping
-		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate);
-		    const channel = buffer.getChannelData(0);
+		    const sampleRate = audioContext.sampleRate; // Samples per second
+		    const totalSamples = grayscale.length; // Total number of pixels (grayscale values)
+    
+		    // Human hearing range
+		    const minFrequency = 50; // Lower limit of human hearing in Hz
+		    const maxFrequency = 15000; // Upper limit of human hearing in Hz
+    
+		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate); // Create audio buffer
+		    const channel = buffer.getChannelData(0); // Get audio channel
+
+		    // Define pulse durations (modifiable via user input)
+		    const highFreqPulseDuration = document.getElementById('highFreqPulseDurationSlider').value / 1_000_000; // Slider in microseconds
+		    const lowFreqPulseDuration = document.getElementById('lowFreqPulseDurationSlider').value / 1_000_000; // Slider in microseconds
 
 		    // Generate audio samples based on grayscale values
 		    for (let i = 0; i < grayscale.length; i++) {
 		        const pixelValue = grayscale[i]; // Grayscale value (0 to 1)
-		        const frequency = frequencyBase + pixelValue * frequencyRange; // Map pixel value to frequency
+        
+		        // Map grayscale value to human-audible frequency range
+		        const frequency = minFrequency + pixelValue * (maxFrequency - minFrequency);
 		        const amplitude = pixelValue; // Amplitude is proportional to grayscale value
 		        const t = i / sampleRate; // Time for the current sample
 
-		        let waveSample;
+		        let waveSample; // Initialize wave sample
 
-		        // Threshold frequency to distinguish between high and low frequencies
-		        const pulseThreshold = 1500; // Frequency above which we use a beep
+		        // Frequency threshold to distinguish between high and low frequencies
+		        const pulseThreshold = (minFrequency + maxFrequency) / 2; // Midpoint frequency for separation
 
 		        if (frequency >= pulseThreshold) {
-		            // For high frequencies, create sharp pulses (beeps)
-		            const pulseDuration = 0.005; // Duration of the pulse in seconds
-		            if (t % (1 / frequency) < pulseDuration) {
-		                waveSample = amplitude; // Sharp pulse for high frequencies (beep)
+		            // For high frequencies, use highFreqPulseDuration
+		            if (t % (1 / frequency) < highFreqPulseDuration) {
+		                waveSample = amplitude; // Generate high-frequency pulse
 		            } else {
-		                waveSample = 0; // No sound in between pulses
+		                waveSample = 0; // Silence between pulses
 		            }
 		        } else {
-		            // For low frequencies, create sharp clicks (low frequency pulses)
-		            const pulseDuration = 0.01; // Duration of the pulse in seconds
-		            if (t % (1 / frequency) < pulseDuration) {
-		                waveSample = amplitude; // Sharp pulse for low frequencies (click)
+		            // For low frequencies, use lowFreqPulseDuration
+		            if (t % (1 / frequency) < lowFreqPulseDuration) {
+		                waveSample = amplitude; // Generate low-frequency pulse
 		            } else {
-		                waveSample = 0; // No sound in between pulses
+		                waveSample = 0; // Silence between pulses
 		            }
 		        }
 
-		        channel[i] = waveSample; // Set the sample value in the channel
+		        channel[i] = waveSample; // Assign wave sample to audio channel
 		    }
 
 		    // Normalize the audio signal
@@ -416,6 +458,8 @@
 		        });
 		    }
 		}
+
+
 
 
         // Convert AudioBuffer to WAV format
