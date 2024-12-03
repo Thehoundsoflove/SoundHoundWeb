@@ -18,12 +18,12 @@
 <body>
     <h1>Capture Image to Pulse Audio</h1>
 	<label for="highFreqPulseDurationSlider">High Frequency Pulse Duration (µs): </label>
-	<input type="range" id="highFreqPulseDurationSlider" min="20" max="400" value="400" step="1">
-	<span id="highFreqPulseDurationValue">400</span> µs
+	<input type="range" id="highFreqPulseDurationSlider" min="20" max="30" value="30" step="1">
+	<span id="highFreqPulseDurationValue">30</span> µs
 	<br>
 	<label for="lowFreqPulseDurationSlider">Low Frequency Pulse Duration (µs): </label>
-	<input type="range" id="lowFreqPulseDurationSlider" min="20" max="300" value="300" step="1">
-	<span id="lowFreqPulseDurationValue">300</span> µs
+	<input type="range" id="lowFreqPulseDurationSlider" min="20" max="25" value="20" step="1">
+	<span id="lowFreqPulseDurationValue">20</span> µs
 	<br>
     <label for="resolutionSlider">Resolution: </label>
     <input type="range" id="resolutionSlider" min="50" max="350" value="150" step="50">
@@ -392,53 +392,48 @@
 		    }
 		}
 
-		// Modify the generateAudio function to handle different waveforms
+		// Generate a pulse-based square wave
 		function generateAudio(grayscale) {
 		    const sampleRate = audioContext.sampleRate; // Samples per second
 		    const totalSamples = grayscale.length; // Total number of pixels (grayscale values)
-    
+
 		    // Human hearing range
 		    const minFrequency = 50; // Lower limit of human hearing in Hz
 		    const maxFrequency = 15000; // Upper limit of human hearing in Hz
-    
+
 		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate); // Create audio buffer
 		    const channel = buffer.getChannelData(0); // Get audio channel
 
 		    // Define pulse durations (modifiable via user input)
-		    const highFreqPulseDuration = document.getElementById('highFreqPulseDurationSlider').value / 1_000_000; // Slider in microseconds
-		    const lowFreqPulseDuration = document.getElementById('lowFreqPulseDurationSlider').value / 1_000_000; // Slider in microseconds
+		    const highFreqPulseDurationSamples = Math.round(
+		        (document.getElementById('highFreqPulseDurationSlider').value / 1_000_000) * sampleRate
+		    ); // Slider in microseconds, converted to samples
+		    const lowFreqPulseDurationSamples = Math.round(
+		        (document.getElementById('lowFreqPulseDurationSlider').value / 1_000_000) * sampleRate
+		    ); // Slider in microseconds, converted to samples
 
 		    // Generate audio samples based on grayscale values
+		    let currentSample = 0;
 		    for (let i = 0; i < grayscale.length; i++) {
 		        const pixelValue = grayscale[i]; // Grayscale value (0 to 1)
-        
-		        // Map grayscale value to human-audible frequency range
-		        const frequency = minFrequency + pixelValue * (maxFrequency - minFrequency);
+		        const frequency = minFrequency + pixelValue * (maxFrequency - minFrequency); // Map grayscale to frequency
 		        const amplitude = pixelValue; // Amplitude is proportional to grayscale value
-		        const t = i / sampleRate; // Time for the current sample
+		        const periodSamples = Math.round(sampleRate / frequency); // Samples per cycle
 
-		        let waveSample; // Initialize wave sample
+		        // Determine pulse duration based on frequency threshold
+		        const pulseDurationSamples =
+		            frequency >= (minFrequency + maxFrequency) / 2
+		                ? highFreqPulseDurationSamples
+		                : lowFreqPulseDurationSamples;
 
-		        // Frequency threshold to distinguish between high and low frequencies
-		        const pulseThreshold = (minFrequency + maxFrequency) / 2; // Midpoint frequency for separation
-
-		        if (frequency >= pulseThreshold) {
-		            // For high frequencies, use highFreqPulseDuration
-		            if (t % (1 / frequency) < highFreqPulseDuration) {
-		                waveSample = amplitude; // Generate high-frequency pulse
-		            } else {
-		                waveSample = 0; // Silence between pulses
-		            }
-		        } else {
-		            // For low frequencies, use lowFreqPulseDuration
-		            if (t % (1 / frequency) < lowFreqPulseDuration) {
-		                waveSample = amplitude; // Generate low-frequency pulse
-		            } else {
-		                waveSample = 0; // Silence between pulses
-		            }
+		        // Assign samples for the current pulse
+		        const pulseEnd = Math.min(currentSample + pulseDurationSamples, channel.length); // Ensure no overflow
+		        for (let j = currentSample; j < pulseEnd; j++) {
+		            channel[j] = amplitude; // Set pulse samples
 		        }
 
-		        channel[i] = waveSample; // Assign wave sample to audio channel
+		        // Move to the next pulse
+		        currentSample = pulseEnd;
 		    }
 
 		    // Normalize the audio signal
@@ -459,42 +454,40 @@
 		    }
 		}
 
+		// Convert AudioBuffer to WAV format
+		function bufferToWave(buffer, totalSamples) {
+		    const wavArray = new Uint8Array(44 + totalSamples * 2);
+		    const view = new DataView(wavArray.buffer);
+		    // RIFF header
+		    writeString(view, 0, 'RIFF');
+		    view.setUint32(4, 36 + totalSamples * 2, true);
+		    writeString(view, 8, 'WAVE');
+		    writeString(view, 12, 'fmt ');
+		    view.setUint32(16, 16, true);
+		    view.setUint16(20, 1, true);
+		    view.setUint16(22, 1, true);
+		    view.setUint32(24, audioContext.sampleRate, true);
+		    view.setUint32(28, audioContext.sampleRate * 2, true);
+		    view.setUint16(32, 2, true);
+		    view.setUint16(34, 16, true);
+		    writeString(view, 36, 'data');
+		    view.setUint32(40, totalSamples * 2, true);
+		    // Audio data
+		    let offset = 44;
+		    const channelData = buffer.getChannelData(0);
+		    for (let i = 0; i < totalSamples; i++) {
+		        view.setInt16(offset, channelData[i] * 32767, true);
+		        offset += 2;
+		    }
+		    return new Blob([wavArray], { type: 'audio/wav' });
+		}
 
-
-
-        // Convert AudioBuffer to WAV format
-        function bufferToWave(buffer, totalSamples) {
-            const wavArray = new Uint8Array(44 + totalSamples * 2);
-            const view = new DataView(wavArray.buffer);
-            // RIFF header
-            writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + totalSamples * 2, true);
-            writeString(view, 8, 'WAVE');
-            writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, 1, true);
-            view.setUint32(24, audioContext.sampleRate, true);
-            view.setUint32(28, audioContext.sampleRate * 2, true);
-            view.setUint16(32, 2, true);
-            view.setUint16(34, 16, true);
-            writeString(view, 36, 'data');
-            view.setUint32(40, totalSamples * 2, true);
-            // Audio data
-            let offset = 44;
-            const channelData = buffer.getChannelData(0);
-            for (let i = 0; i < totalSamples; i++) {
-                view.setInt16(offset, channelData[i] * 32767, true);
-                offset += 2;
-            }
-            return new Blob([wavArray], { type: 'audio/wav' });
-        }
-        // Write a string into the WAV header
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        }		
+		// Write a string into the WAV header
+		function writeString(view, offset, string) {
+		    for (let i = 0; i < string.length; i++) {
+		        view.setUint8(offset + i, string.charCodeAt(i));
+		    }
+		}		
 		const playAudio = () => {
 		    audioPlayer.src = URL.createObjectURL(wavBlob);
 		    audioPlayer.play().catch((err) => {
