@@ -1,5 +1,6 @@
 # Disclaimer
-This Webapp works on and is optimized for **[Android]**!
+This Webapp works on and is optimized for **[Android]** and **[iPhone iOS 18~]!**
+ - iPhone note: Use Brave Browser, it will not work with any other browser.
 
 Output from this webapp can be verified with the built-in decoder.
 
