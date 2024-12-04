@@ -16,6 +16,11 @@
         }
     </style>
 <body>
+	<label for="scanMethod">Choose scanning method:</label>
+	<select id="scanMethod">
+	    <option value="pixel">Pixel-by-Pixel</option>
+	    <option value="row">Row-by-Row</option>
+	</select>
     <h1>Capture Image to Pulse Audio</h1>
 	<label for="highFreqPulseDurationSlider">High Frequency Pulse Duration (µs): </label>
 	<input type="range" id="highFreqPulseDurationSlider" min="20" max="300" value="30" step="1">
@@ -404,6 +409,9 @@
 		    const maxPulseDuration = Math.max(highFreqPulseDuration, lowFreqPulseDuration);
 		    const maxPulseSamples = Math.ceil(maxPulseDuration * sampleRate);
 
+		    // Get the selected scanning method (pixel-by-pixel or row-by-row)
+		    const scanMethod = document.getElementById('scanMethod').value;
+
 		    // Total audio samples: one maximum pulse per grayscale value
 		    const totalSamples = grayscale.length * maxPulseSamples;
 		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate);
@@ -411,25 +419,55 @@
 
 		    let currentSample = 0;
 
-		    // Generate pulses for each grayscale value
-		    for (let i = 0; i < grayscale.length; i++) {
-		        const pixelValue = grayscale[i];
-		        const frequency = 50 + pixelValue * (15000 - 50); // Map grayscale to frequency
-		        const amplitude = pixelValue; // Amplitude proportional to grayscale value
+		    if (scanMethod === 'row') {
+		        // Row-by-row scanning
+		        const canvasWidth = Math.sqrt(grayscale.length); // Assuming square image
+		        const canvasHeight = canvasWidth;
 
-		        const pulseDuration =
-		            frequency >= (50 + 15000) / 2 ? highFreqPulseDuration : lowFreqPulseDuration;
-		        const pulseSamples = Math.ceil(pulseDuration * sampleRate);
+		        for (let row = 0; row < canvasHeight; row++) {
+		            for (let col = 0; col < canvasWidth; col++) {
+		                const pixelIndex = row * canvasWidth + col;
+		                const pixelValue = grayscale[pixelIndex];
+		                const frequency = 50 + pixelValue * (15000 - 50); // Map grayscale to frequency
+		                const amplitude = pixelValue; // Amplitude proportional to grayscale value
 
-		        // Generate a square wave pulse
-		        for (let j = 0; j < pulseSamples && currentSample < channel.length; j++) {
-		            channel[currentSample++] = amplitude;
+		                const pulseDuration =
+		                    frequency >= (50 + 15000) / 2 ? highFreqPulseDuration : lowFreqPulseDuration;
+		                const pulseSamples = Math.ceil(pulseDuration * sampleRate);
+
+		                // Generate a square wave pulse
+		                for (let j = 0; j < pulseSamples && currentSample < channel.length; j++) {
+		                    channel[currentSample++] = amplitude;
+		                }
+
+		                // Pad the rest of the max pulse to maintain consistency
+		                const remainingSamples = maxPulseSamples - pulseSamples;
+		                for (let j = 0; j < remainingSamples && currentSample < channel.length; j++) {
+		                    channel[currentSample++] = 0; // Silence
+		                }
+		            }
 		        }
+		    } else {
+		        // Pixel-by-pixel scanning (default)
+		        for (let i = 0; i < grayscale.length; i++) {
+		            const pixelValue = grayscale[i];
+		            const frequency = 50 + pixelValue * (15000 - 50); // Map grayscale to frequency
+		            const amplitude = pixelValue; // Amplitude proportional to grayscale value
 
-		        // Pad the rest of the max pulse to maintain consistency
-		        const remainingSamples = maxPulseSamples - pulseSamples;
-		        for (let j = 0; j < remainingSamples && currentSample < channel.length; j++) {
-		            channel[currentSample++] = 0; // Silence
+		            const pulseDuration =
+		                frequency >= (50 + 15000) / 2 ? highFreqPulseDuration : lowFreqPulseDuration;
+		            const pulseSamples = Math.ceil(pulseDuration * sampleRate);
+
+		            // Generate a square wave pulse
+		            for (let j = 0; j < pulseSamples && currentSample < channel.length; j++) {
+		                channel[currentSample++] = amplitude;
+		            }
+
+		            // Pad the rest of the max pulse to maintain consistency
+		            const remainingSamples = maxPulseSamples - pulseSamples;
+		            for (let j = 0; j < remainingSamples && currentSample < channel.length; j++) {
+		                channel[currentSample++] = 0; // Silence
+		            }
 		        }
 		    }
 
@@ -450,8 +488,6 @@
 		        });
 		    }
 		}
-
-
 
 		// Convert AudioBuffer to WAV format
 		function bufferToWave(buffer, totalSamples) {
