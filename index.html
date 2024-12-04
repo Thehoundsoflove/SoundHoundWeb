@@ -18,12 +18,12 @@
 <body>
     <h1>Capture Image to Pulse Audio</h1>
 	<label for="highFreqPulseDurationSlider">High Frequency Pulse Duration (µs): </label>
-	<input type="range" id="highFreqPulseDurationSlider" min="20" max="30" value="30" step="1">
+	<input type="range" id="highFreqPulseDurationSlider" min="20" max="300" value="30" step="1">
 	<span id="highFreqPulseDurationValue">30</span> µs
 	<br>
 	<label for="lowFreqPulseDurationSlider">Low Frequency Pulse Duration (µs): </label>
-	<input type="range" id="lowFreqPulseDurationSlider" min="20" max="25" value="20" step="1">
-	<span id="lowFreqPulseDurationValue">20</span> µs
+	<input type="range" id="lowFreqPulseDurationSlider" min="20" max="200" value="25" step="1">
+	<span id="lowFreqPulseDurationValue">25</span> µs
 	<br>
     <label for="resolutionSlider">Resolution: </label>
     <input type="range" id="resolutionSlider" min="50" max="350" value="150" step="50">
@@ -395,45 +395,42 @@
 		// Generate a pulse-based square wave
 		function generateAudio(grayscale) {
 		    const sampleRate = audioContext.sampleRate; // Samples per second
-		    const totalSamples = grayscale.length; // Total number of pixels (grayscale values)
-
-		    // Human hearing range
-		    const minFrequency = 50; // Lower limit of human hearing in Hz
-		    const maxFrequency = 15000; // Upper limit of human hearing in Hz
-
-		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate); // Create audio buffer
-		    const channel = buffer.getChannelData(0); // Get audio channel
 
 		    // Define pulse durations (modifiable via user input)
-		    const highFreqPulseDurationSamples = Math.round(
-		        (document.getElementById('highFreqPulseDurationSlider').value / 1_000_000) * sampleRate
-		    ); // Slider in microseconds, converted to samples
-		    const lowFreqPulseDurationSamples = Math.round(
-		        (document.getElementById('lowFreqPulseDurationSlider').value / 1_000_000) * sampleRate
-		    ); // Slider in microseconds, converted to samples
+		    const highFreqPulseDuration = parseFloat(document.getElementById('highFreqPulseDurationSlider').value) / 1_000_000; // in seconds
+		    const lowFreqPulseDuration = parseFloat(document.getElementById('lowFreqPulseDurationSlider').value) / 1_000_000; // in seconds
 
-		    // Generate audio samples based on grayscale values
+		    // Calculate maximum samples needed for the longest pulse
+		    const maxPulseDuration = Math.max(highFreqPulseDuration, lowFreqPulseDuration);
+		    const maxPulseSamples = Math.ceil(maxPulseDuration * sampleRate);
+
+		    // Total audio samples: one maximum pulse per grayscale value
+		    const totalSamples = grayscale.length * maxPulseSamples;
+		    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate);
+		    const channel = buffer.getChannelData(0);
+
 		    let currentSample = 0;
+
+		    // Generate pulses for each grayscale value
 		    for (let i = 0; i < grayscale.length; i++) {
-		        const pixelValue = grayscale[i]; // Grayscale value (0 to 1)
-		        const frequency = minFrequency + pixelValue * (maxFrequency - minFrequency); // Map grayscale to frequency
-		        const amplitude = pixelValue; // Amplitude is proportional to grayscale value
-		        const periodSamples = Math.round(sampleRate / frequency); // Samples per cycle
+		        const pixelValue = grayscale[i];
+		        const frequency = 50 + pixelValue * (15000 - 50); // Map grayscale to frequency
+		        const amplitude = pixelValue; // Amplitude proportional to grayscale value
 
-		        // Determine pulse duration based on frequency threshold
-		        const pulseDurationSamples =
-		            frequency >= (minFrequency + maxFrequency) / 2
-		                ? highFreqPulseDurationSamples
-		                : lowFreqPulseDurationSamples;
+		        const pulseDuration =
+		            frequency >= (50 + 15000) / 2 ? highFreqPulseDuration : lowFreqPulseDuration;
+		        const pulseSamples = Math.ceil(pulseDuration * sampleRate);
 
-		        // Assign samples for the current pulse
-		        const pulseEnd = Math.min(currentSample + pulseDurationSamples, channel.length); // Ensure no overflow
-		        for (let j = currentSample; j < pulseEnd; j++) {
-		            channel[j] = amplitude; // Set pulse samples
+		        // Generate a square wave pulse
+		        for (let j = 0; j < pulseSamples && currentSample < channel.length; j++) {
+		            channel[currentSample++] = amplitude;
 		        }
 
-		        // Move to the next pulse
-		        currentSample = pulseEnd;
+		        // Pad the rest of the max pulse to maintain consistency
+		        const remainingSamples = maxPulseSamples - pulseSamples;
+		        for (let j = 0; j < remainingSamples && currentSample < channel.length; j++) {
+		            channel[currentSample++] = 0; // Silence
+		        }
 		    }
 
 		    // Normalize the audio signal
@@ -453,6 +450,8 @@
 		        });
 		    }
 		}
+
+
 
 		// Convert AudioBuffer to WAV format
 		function bufferToWave(buffer, totalSamples) {
